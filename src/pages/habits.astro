@@ -88,7 +88,7 @@ type Scale =
  * Work out how one habit's values map onto the five-step ramp.
  *
  * Scaling per habit rather than globally is what lets one column read a six-mile
- * run and another a 7-hour night on the same ramp.
+ * run and another a 9-hour screen day on the same ramp.
  *
  * Habits with only a handful of distinct values get mapped directly onto the
  * steps instead of by quartile. Stretching is nearly always exactly one
@@ -237,8 +237,9 @@ const updated = [running, stretching, screentime, commits]
   <p class="caption">
     Running comes from Strava and commits from the GitHub contributions API —
     those refresh nightly. Screen time is read off my Mac and iPhone locally
-    each night. Stretching is recorded by hand from the Bend app, which offers
-    no web API. Each column starts when that source does.
+    each night. Stretching leaves the Bend app through Apple Health, which a
+    Shortcut on my phone pushes here; the routines Bend never writes to Health
+    I fill in by hand. Each column starts when that source does.
     {updated && <> Last updated {String(updated).slice(0, 10)}.</>}
   </p>
 
@@ -305,7 +306,7 @@ const updated = [running, stretching, screentime, commits]
       <span class="habits-swatch" style="background: var(--accent)"></span>
       More
     </span>
-    <span>Shading is relative to each habit's own quartiles.</span>
+    <span>Shading is relative to each habit's own range.</span>
   </p>
 
   <h2>Summary</h2>

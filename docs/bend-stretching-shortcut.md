@@ -131,9 +131,11 @@ window — a green run and no commit, not a failure.
 
 **Toolbox Pro filters by workout type, not source.** Set it to **Flexibility**,
 which is what Bend files these under. That is also why a Strava run cannot leak
-in through this route: a run is typed Running. Watch for Bend filing a session
-as Yoga or Mind & Body, which older versions did — those would be missed by a
-Flexibility-only filter, and the symptom is a day you stretched showing empty.
+in through this route: a run is typed Running. Older Bend versions filed some
+sessions as Yoga or Mind & Body, which a Flexibility-only filter would miss —
+but before widening the filter to chase a missing day, check that the workout
+is in Health at all. See *Some routines never reach Health* below; on this
+account that, not the type filter, is what empties a day.
 
 **If the workouts arrive as display strings**, e.g.
 `Flexibility 2026-08-31 at 8:35 AM`, that is Shortcuts coercing a list variable
@@ -261,6 +263,17 @@ echo '2026-08-26T07:12:00-0400,2026-08-26T07:20:00-0400,Wake Up' \
   `export.zip` is handy, `python scripts/import_health.py export.zip
   --list-sources` prints every source and activity type it contains, which
   settles the question outright.
+- **Some routines never reach Health.** Bend does not write every routine as a
+  workout. On this account **Tech Neck** has never produced a single HealthKit
+  record — confirmed 2026-09-10, by looking in Health rather than by inferring
+  it from the Shortcut — while Hamstrings, Shoulders, Pre-Run and Posture Reset
+  all arrive normally. Nothing on the phone side fixes this: the Shortcut can
+  only forward what Bend wrote, so a wider type filter, a different source
+  string and a longer window all return the same nothing. The tell is a routine
+  that is missing on *every* day it appears in Bend's Recent History, rather
+  than on scattered days. Those days have to come off the Recent History screen
+  by hand into `scripts/bend-history.csv` — see *Sessions from before the sync*,
+  which is the same path for the same reason.
 - **Nothing has run at all.** The nightly *Refresh habit data* job warns when
   `stretching.json` has not moved in more than four days, so a Shortcut that
   quietly stopped shows up as an annotation rather than as a column that just

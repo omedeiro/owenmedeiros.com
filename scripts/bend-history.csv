@@ -8,8 +8,17 @@
 # Columns: date (YYYY-MM-DD), routine. One row per session; two rows with the
 # same date count as two sessions that day.
 #
-# Source: screenshots of Recent History taken 2026-08-23.
+# Source: screenshots of Recent History taken 2026-08-23 and 2026-09-10.
+#
+# The 2026-09-10 rows are days the Shortcut/Health route missed, not
+# pre-sync history. Days that route already recorded are deliberately left
+# out so this file never overwrites a HealthKit count.
 date,routine
+2026-09-09,Tech Neck
+2026-09-06,Hamstrings 1
+2026-09-03,Tech Neck
+2026-09-02,Tech Neck
+2026-08-24,Hamstrings 1
 2026-08-22,Pre-Run 1
 2026-08-21,Wake Up
 2026-08-20,Tech Neck

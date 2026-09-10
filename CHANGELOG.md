@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.7.2 — 2026-09-10
+
+### Added
+
+- Five Bend sessions the automated route never delivered — 2026-08-24, 09-02, 09-03, 09-06 and 09-09 — transcribed from the app's Recent History into `scripts/bend-history.csv`. Only the missing days were added: `write_habit` merges per day, so re-transcribing a day HealthKit already recorded would overwrite a measured count with a hand-typed 1
+
+### Changed
+
+- `/habits` no longer describes stretching as recorded by hand. It has arrived through Apple Health and the phone's Shortcut since 2.3.0; hand transcription is now the exception, for the routines Bend does not write to Health at all
+- The heatmap legend said shading was relative to each habit's quartiles. Habits with four or fewer distinct values — stretching, nearly always one session — are mapped straight onto the ramp steps instead, so the legend now says "range"
+
+### Fixed
+
+- `docs/bend-stretching-shortcut.md` blamed a missing day on Toolbox Pro's Flexibility-only workout-type filter dropping a session Bend had filed as Yoga or Mind & Body. That is the wrong diagnosis for this account: **Bend writes no HealthKit record at all for Tech Neck**, confirmed by looking in Health on 2026-09-10, which is why all three Tech Neck days were empty while neighbouring routines arrived. Widening the type filter cannot help — the workout does not exist to be filtered. The doc and the `habits-data` skill now record the signature that tells the two apart: a type-filter miss loses scattered days, a routine Bend never writes is missing on every day it appears in Recent History
+
 ## 2.7.1 — 2026-09-06
 
 ### Fixed
