@@ -3,7 +3,7 @@
   "label": "Stretching",
   "source": "Bend",
   "unit": "sessions",
-  "updated_at": "2026-09-10T22:42:30Z",
+  "updated_at": "2026-09-10T23:47:36Z",
   "days": {
     "2026-08-02": {
       "value": 1,
@@ -211,6 +211,9 @@
         "routines": "Tech Neck",
         "backfilled": true
       }
+    },
+    "2026-09-10": {
+      "value": 1
     }
   }
 }
