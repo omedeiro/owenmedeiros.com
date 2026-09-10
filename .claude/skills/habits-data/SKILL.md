@@ -165,6 +165,17 @@ list of workout **objects** and filters them by source itself (`--source`, defau
 `Bend`), which is what keeps the Shortcut down to two actions: date formatting and
 source matching both fail silently in Shortcuts, so neither belongs there.
 
+**Bend does not write every routine to Health, and no phone-side change fixes that.**
+**Tech Neck** produces no HealthKit record at all — checked in Health on 2026-09-10,
+after every Tech Neck day (9/2, 9/3, 9/9) came through the Shortcut empty while
+Hamstrings, Shoulders, Pre-Run and Posture Reset on neighbouring days all arrived. Do
+not diagnose this as the Toolbox Pro type filter dropping a Yoga/Mind & Body workout
+and widen the filter; the workout does not exist to be filtered. The signature that
+tells the two apart: a type-filter miss loses scattered days, a routine Bend never
+writes is missing on *every* day it appears in Bend's Recent History. Such days can
+only be transcribed by hand into `scripts/bend-history.csv` and merged with
+`backfill_stretching.py` — the same path as pre-sync history.
+
 **HealthKit cannot be read while the phone is locked** — access is relinquished ten
 minutes after the screen locks and returns only on unlock. So a *time-of-day* Shortcuts
 automation is the wrong trigger for anything reading Health: it fires whether or not the
