@@ -15,6 +15,7 @@ skill covers what is expensive to rediscover.
 | Habit | Script | Where |
 |---|---|---|
 | Running | `fetch_strava.py` | CI, nightly |
+| Push-ups | `fetch_strava.py` | CI, nightly |
 | Commits | `fetch_github.py` | CI, nightly |
 | Screen time | `fetch_screentime.py` | **Mac only** — LaunchAgent, daily 23:00 |
 | Sleep | `import_shortcut_sleep.py` | **Mac only** — LaunchAgent, from an iCloud Drive drop |
@@ -26,6 +27,28 @@ The Mac-only ones read Apple data no CI runner can reach. Do not try to move
 them into `.github/workflows/habits.yml`. Stretching is the exception that
 proves the rule: it is not *read* in CI, it is *pushed* to CI by an iOS
 Shortcut, which is the only way data that lives in HealthKit can get anywhere.
+
+## Push-ups: the count is prose, and costs a second call
+
+Puuush posts sets to Strava as generic `Workout` activities, so `sport_type`
+cannot identify them — an Apple Watch strength circuit is also a `Workout`.
+Match on the activity **name**.
+
+The rep count exists **only** as free text in the description
+(`Total Reps: 15`). Two things already checked, so do not re-check them:
+`/athlete/activities` returns no `description` key at all — the detail endpoint
+is the only route — and `get_strength_workout_details` comes back with an empty
+`exercise_sets` list for these, so there is no structured field waiting to be
+found.
+
+That means one extra call per session against a 200-per-15-minutes limit, which
+is why `build_pushup_days` treats `pushups.json` as a cache: a day already
+recorded with the same session count is reused and never re-read, so cost
+tracks what changed rather than the length of the history. Do not "simplify"
+that away — over the 730-day default window it is the difference between one
+call and hundreds. A day that cannot be parsed is skipped with a warning, never
+written as a zero; the page renders a zero as an ordinary rest day, which would
+make a broken parse look like not having trained.
 
 ## The JSON contract
 

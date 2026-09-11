@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.8.0 — 2026-09-10
+
+### Added
+
+- A **push-ups** column on `/habits`, the fifth heatmap, counting reps a day. The Puuush app posts each set to Strava, so the data arrives on the nightly Strava refresh with no new credential and no new transport — but it arrives awkwardly. Puuush files sets as a generic `Workout`, which an Apple Watch strength circuit also is, so `fetch_strava.py` matches on the activity **name** rather than on `sport_type`; and the count exists only as free text in the description (`Total Reps: 15`), which `/athlete/activities` does not return at all. There is no structured field to read instead — Strava's strength-workout breakdown comes back with an empty set list for these — so every session costs a second, per-activity call
+- `build_pushup_days` therefore treats `pushups.json` as a cache rather than an output: a day already recorded with the same number of sessions is reused untouched and never re-read, so cost tracks what changed instead of how long the history is. The first run across the 730-day default window spent exactly one detail call, which is what keeps this inside Strava's 200-per-15-minutes limit as the column fills in. Days resolve newest first and stop at a budget, so a backlog sheds its oldest end rather than today's, and re-reading a day whose session count moved is what lets a set edited or deleted in the app correct itself afterwards
+- A day whose description cannot be parsed is skipped with a warning rather than written as a zero. The page renders a zero as an ordinary rest day, so a Puuush release that reworded `Total Reps` would otherwise present as not having trained — the one fragile assumption here, made loud instead of plausible
+
+### Changed
+
+- `/habits` says five things rather than four, and names Strava as the source of both running and push-ups; the summary table, the SVG `aria-label`, and the page description follow
+- `AGENTS.md`, `docs/habits-pipeline.md`, and the `habits-data` skill record why push-ups are matched by name, why the description is the only source of the count, and why the cache is load-bearing rather than an optimisation
+
 ## 2.7.2 — 2026-09-10
 
 ### Added
