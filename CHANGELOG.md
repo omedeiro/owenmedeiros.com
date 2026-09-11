@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.8.1 — 2026-09-10
+
+### Changed
+
+- Push-ups move to the rightmost column on `/habits`. Sitting second, next to running, grouped the two Strava-sourced habits together, but it also put the newest and emptiest column in the middle of four established ones. Last is where a column with one day of history reads as new rather than as broken. The page description and the SVG `aria-label` now list the habits in the order they are drawn
+
 ## 2.8.0 — 2026-09-10
 
 ### Added
