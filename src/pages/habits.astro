@@ -1,6 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import running from "../data/habits/running.json";
+import pushups from "../data/habits/pushups.json";
 import commits from "../data/habits/commits.json";
 import screentime from "../data/habits/screentime.json";
 import stretching from "../data/habits/stretching.json";
@@ -39,6 +40,19 @@ const HABITS = [
       return secs ? `${miles} · ${Math.round(secs / 60)} min` : miles;
     },
     summary: (total: number) => `${total.toFixed(0)} mi total`,
+  },
+  {
+    data: pushups as Habit,
+    caption: "darker = more",
+    empty: "none",
+    format: (d: Day) => {
+      const reps = `${d.value} rep${d.value === 1 ? "" : "s"}`;
+      // Most days are a single set, and saying so on every one of them is noise;
+      // the count only earns its place once a day holds more than one.
+      const sessions = Number(d.extra?.count) || 1;
+      return sessions > 1 ? `${reps} · ${sessions} sessions` : reps;
+    },
+    summary: (total: number) => `${total.toFixed(0)} reps total`,
   },
   {
     data: commits as Habit,
@@ -220,22 +234,23 @@ const columns = HABITS.map((habit, index) => {
 const width = GUTTER + columns.length * BLOCK_W + (columns.length - 1) * BLOCK_GAP;
 const height = HEAD_H + WEEKS * PITCH;
 const anyData = columns.some((c) => c.hasData);
-const updated = [running, stretching, screentime, commits]
+const updated = [running, pushups, stretching, screentime, commits]
   .map((h) => h.updated_at)
   .filter(Boolean)
   .sort()
   .pop();
 ---
 
-<Base title="Habits — Owen Medeiros" description="Daily habit tracking: running, stretching, screen time, and commits." wide>
+<Base title="Habits — Owen Medeiros" description="Daily habit tracking: running, push-ups, stretching, screen time, and commits." wide>
   <h1>Habits</h1>
   <p>
-    Four things I track, back to {earliestKey.slice(0, 4)}. Each block is one habit; the seven
+    Five things I track, back to {earliestKey.slice(0, 4)}. Each block is one habit; the seven
     cells across a row are Monday through Sunday, and each row down is a week
     further into the past. Hover or tap a cell for that day's numbers.
   </p>
   <p class="caption">
-    Running comes from Strava and commits from the GitHub contributions API —
+    Running and push-ups both come from Strava — the rep counts are posted
+    there by the Puuush app — and commits from the GitHub contributions API;
     those refresh nightly. Screen time is read off my Mac and iPhone locally
     each night. Stretching leaves the Bend app through Apple Health, which a
     Shortcut on my phone pushes here; the routines Bend never writes to Health
@@ -253,7 +268,7 @@ const updated = [running, stretching, screentime, commits]
   <div class="habits-chart">
     <div class="habits-scroll">
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img"
-           aria-label={`Heatmaps of running, stretching, screen time, and commits since ${earliestKey.slice(0, 4)}`}>
+           aria-label={`Heatmaps of running, push-ups, stretching, screen time, and commits since ${earliestKey.slice(0, 4)}`}>
         {columns.map((column) => (
           <g>
             <text class="habits-name" x={column.x} y={12}>{column.label}</text>

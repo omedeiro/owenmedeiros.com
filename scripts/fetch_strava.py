@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-"""Fetch Strava activities and emit the running habit file.
+"""Fetch Strava activities and emit the running and push-up habit files.
 
-Produces ``running.json`` — miles per day from Run / TrailRun /
-VirtualRun activities.
+Produces ``running.json`` — miles per day from Run / TrailRun / VirtualRun
+activities — and ``pushups.json`` — reps per day from the "Workout" entries the
+Puuush app posts.
 
-Stretching deliberately does *not* come from here. Strava's "Workout" entries
-are strength sessions, not stretching; the stretching habit is sourced from
-the Bend app via ``import_health.py`` instead.
+The rep count is only in the activity **description**, and the activity list
+endpoint does not return one, so every push-up session costs an extra detail
+call. ``build_pushup_days`` rations and caches those; read it before changing
+anything here.
+
+Stretching deliberately does *not* come from here. Strava's other "Workout"
+entries are strength sessions, not stretching; the stretching habit is sourced
+from the Bend app via ``import_health.py`` instead.
 
 Usage:
     python scripts/fetch_strava.py --auth      # one-time: authorize the app
@@ -30,18 +36,21 @@ import datetime as dt
 import http.server
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 import webbrowser
+from typing import Any
 
 import habits_common as hc
 
 TOKEN_URL = "https://www.strava.com/oauth/token"
 AUTH_URL = "https://www.strava.com/oauth/authorize"
 ACTIVITIES_URL = "https://www.strava.com/api/v3/athlete/activities"
+ACTIVITY_URL = "https://www.strava.com/api/v3/activities/{}"
 
 # The authorization code comes back as a query parameter on this URL, so
 # --auth briefly serves it locally and reads the code directly. Relying on the
@@ -61,6 +70,25 @@ REQUIRED_SCOPE = "activity:read"
 
 RUN_TYPES = {"Run", "TrailRun", "VirtualRun"}
 
+# Push-ups reach Strava from the Puuush app as plain "Workout" activities, so
+# the type alone cannot pick them out — an Apple Watch strength circuit lands in
+# exactly the same bucket. The name is what separates them.
+PUSHUP_TYPES = {"Workout"}
+PUSHUP_NAME = re.compile(r"push[\s_-]?ups?", re.IGNORECASE)
+
+# Puuush writes the count into the description as prose:
+#
+#     Total Reps: 15
+#     Average Time per Push-Up: 1.53s
+#
+# There is no structured field to read instead — Strava's strength-workout
+# breakdown returns an empty set list for these — so the description is it.
+PUSHUP_REPS = re.compile(r"total\s+reps:\s*([\d,]+)", re.IGNORECASE)
+
+# Strava allows 200 requests per 15 minutes. The activity list costs a couple of
+# pages; the rest is available for detail calls, and this leaves headroom.
+DETAIL_BUDGET = 150
+
 METRES_PER_MILE = 1609.344
 
 PER_PAGE = 200
@@ -77,8 +105,8 @@ def api_post(url: str, data: dict[str, str]) -> dict:
         raise SystemExit(f"Strava {exc.code} from {url}: {detail}") from exc
 
 
-def api_get(url: str, token: str, params: dict[str, str]) -> list[dict]:
-    full = f"{url}?{urllib.parse.urlencode(params)}"
+def api_get(url: str, token: str, params: dict[str, str] | None = None) -> Any:
+    full = f"{url}?{urllib.parse.urlencode(params)}" if params else url
     req = urllib.request.Request(full, headers={"Authorization": f"Bearer {token}"})
     try:
         with urllib.request.urlopen(req, timeout=30, context=hc.ssl_context()) as resp:
@@ -335,6 +363,76 @@ def build_days(acts: list[dict], types: set[str]) -> dict[str, dict]:
     return days
 
 
+def activity_reps(token: str, act: dict) -> int | None:
+    """Read one session's rep count out of its description.
+
+    Costs an API call. ``/athlete/activities`` returns a summary that carries no
+    ``description`` key at all, so the detail endpoint is the only way to it.
+    """
+    detail = api_get(ACTIVITY_URL.format(act.get("id")), token)
+    found = PUSHUP_REPS.search(detail.get("description") or "")
+    return int(found.group(1).replace(",", "")) if found else None
+
+
+def build_pushup_days(
+    token: str,
+    acts: list[dict],
+    existing: dict[str, dict],
+    budget: int = DETAIL_BUDGET,
+) -> dict[str, dict]:
+    """Aggregate push-up sessions into per-day rep totals.
+
+    A detail call per session would eventually outgrow Strava's rate limit, so a
+    day the file already records with the same number of sessions is reused
+    untouched and never read again. Cost then tracks what changed rather than
+    how long the history is — which is what makes the two-year default window
+    affordable, and why the merge in ``write_habit`` is leaned on rather than
+    worked around. A day whose session count moved is re-read in full, so a
+    session added or deleted after the fact still corrects itself.
+
+    Days resolve newest first, so if the budget does run out it is the oldest
+    unresolved day that waits for the next run rather than today's.
+    """
+    by_day: dict[str, list[dict]] = {}
+    for act in acts:
+        if activity_type(act) not in PUSHUP_TYPES:
+            continue
+        if not PUSHUP_NAME.search(act.get("name") or ""):
+            continue
+        key = activity_day(act)
+        if key:
+            by_day.setdefault(key, []).append(act)
+
+    days: dict[str, dict] = {}
+    spent = 0
+    for key in sorted(by_day, reverse=True):
+        group = by_day[key]
+        prior = existing.get(key)
+        if prior and int((prior.get("extra") or {}).get("count") or 1) == len(group):
+            days[key] = prior
+            continue
+        if spent + len(group) > budget:
+            hc.log(f"  detail budget of {budget} spent; {key} and earlier wait for the next run")
+            break
+        reps = 0
+        for act in group:
+            spent += 1
+            got = activity_reps(token, act)
+            if got is None:
+                # Logged by hand, or a Puuush release that reworded the summary.
+                # Warn rather than write a zero, which the page would render as
+                # an ordinary rest day.
+                hc.log(f"  warning: no 'Total Reps' in the description of activity "
+                       f"{act.get('id')} on {key}")
+                continue
+            reps += got
+        if reps:
+            days[key] = hc.day(reps, count=len(group))
+    if spent:
+        hc.log(f"  read {spent} push-up description{'' if spent == 1 else 's'}")
+    return days
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--auth", action="store_true", help="run the one-time OAuth flow and exit")
@@ -345,6 +443,8 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--out-dir", default=hc.DATA_DIR, help="habit JSON directory")
     ap.add_argument("--no-merge", action="store_true", help="rebuild the files instead of merging")
     ap.add_argument("--run-types", default=",".join(sorted(RUN_TYPES)))
+    ap.add_argument("--detail-budget", type=int, default=DETAIL_BUDGET,
+                    help="cap on push-up detail calls per run (Strava allows 200/15min)")
     args = ap.parse_args(argv)
 
     if args.auth:
@@ -353,13 +453,24 @@ def main(argv: list[str]) -> int:
 
     after = hc.days_ago(args.days)
     hc.log(f"fetching Strava activities since {after}")
-    acts = fetch_activities(access_token(), after, args.limit)
+    token = access_token()
+    acts = fetch_activities(token, after, args.limit)
     hc.log(f"fetched {len(acts)} activities")
 
     run_types = {t.strip() for t in args.run_types.split(",") if t.strip()}
     hc.write_habit(
         "running", "Running", "Strava", "mi",
         build_days(acts, run_types),
+        merge=not args.no_merge, data_dir=args.out_dir,
+    )
+
+    # Written second, and reading its own file first: the running data is safely
+    # on disk before any detail call gets the chance to fail, and --no-merge
+    # means "rebuild", so it has to discard the cache too or nothing is re-read.
+    prior = {} if args.no_merge else (hc.load_habit("pushups", args.out_dir).get("days") or {})
+    hc.write_habit(
+        "pushups", "Push-ups", "Strava", "reps",
+        build_pushup_days(token, acts, prior, args.detail_budget),
         merge=not args.no_merge, data_dir=args.out_dir,
     )
     return 0

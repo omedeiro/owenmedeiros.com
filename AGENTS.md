@@ -69,6 +69,7 @@ habits only move if the phone or the Mac pushes them.
 | Habit | Script | Refresh |
 |---|---|---|
 | Running | `scripts/fetch_strava.py` | nightly, automatic |
+| Push-ups | `scripts/fetch_strava.py` | nightly, automatic |
 | Commits | `scripts/fetch_github.py` | nightly, automatic |
 | Stretching | `scripts/import_shortcut_stretching.py --payload-file` | daily, automatic — the phone POSTs a `repository_dispatch` |
 | Screen time | `scripts/fetch_screentime.py` | LaunchAgent, daily on the Mac |
@@ -82,7 +83,20 @@ because Bend has filed sessions as Flexibility, Yoga, and Mind & Body across ver
 that pushes sessions off the phone should filter the same way, for the same reason —
 `docs/bend-stretching-shortcut.md` builds it step by step.
 
-Do not source stretching from Strava: its "Workout" activities are strength sessions.
+Do not source stretching from Strava: its other "Workout" activities are strength
+sessions. Push-ups now claim that same `sport_type`, which is why `fetch_strava.py`
+picks them out by activity **name** rather than by type alone — an Apple Watch strength
+circuit is otherwise indistinguishable from a push-up set.
+
+Push-up reps are prose in the activity description (`Total Reps: 15`), written there by
+the Puuush app. Strava has no structured field for them — its strength-workout breakdown
+comes back empty for these — and `/athlete/activities` returns no `description` key at
+all, so each session costs a second, per-activity call. `build_pushup_days` spends one
+only on a day that is new or whose session count changed, reusing every other day
+straight out of `pushups.json`; that is what keeps the 730-day default window well inside
+Strava's 200-requests-per-15-minutes limit, and it is why the merge in `write_habit`
+is depended on here rather than worked around. Re-reading a day whose count moved is what
+lets a session edited or deleted after the fact still correct itself.
 
 `docs/habits-pipeline.md` reviews these pipelines end to end — the shared JSON contract,
 what each source can and cannot provide, known risks, and what is worth doing next. This

@@ -12,6 +12,7 @@ details of the Apple data sources. This is the architectural view.
 | Habit | Source | Transport | Schedule | Retention at source | State |
 |---|---|---|---|---|---|
 | Running | Strava | OAuth web API | CI, nightly | full history | 851 days, from 2019-01-01 |
+| Push-ups | Puuush → Strava | OAuth web API + per-activity detail call | CI, nightly | full history | 1 day, from 2026-09-09 |
 | Commits | GitHub | GraphQL contributions API | CI, nightly | full history | 418 days, from 2020-06-04 |
 | Screen time | `knowledgeC.db` + Biome | local files on the Mac | LaunchAgent, 3×/day | **~28 days** | 29 days |
 | Stretching | Bend → Apple Health | Shortcut → `repository_dispatch` | CI, on each push from the phone | ~unlimited | 19 days + whatever the phone has sent |
@@ -54,6 +55,34 @@ warns and skips rather than failing when a credential is missing.
 
 Nothing here is clever, which is the point. These are the two habits that can
 be re-fetched from scratch at any time.
+
+### Push-ups — solid, but shaped by the rate limit
+
+Puuush posts each set to Strava as a generic `Workout` activity and puts the
+count in the description as prose: `Total Reps: 15`. Two consequences follow,
+and between them they account for the whole design of `build_pushup_days`.
+
+The first is that the type cannot identify the activity — an Apple Watch
+strength circuit is also a `Workout` — so the match is on the activity **name**
+instead. The second is that `/athlete/activities` returns no `description` key
+at all, so the count is reachable only through the per-activity detail endpoint,
+one call per session. There is no structured alternative: Strava's
+strength-workout breakdown returns an empty set list for these.
+
+A naive implementation costs one call per session per run, which grows without
+bound against a fixed 200-per-15-minutes limit. So the file is treated as a
+cache: a day already recorded with the same number of sessions is reused
+untouched, and only a new day, or one whose session count moved, is re-read.
+Cost then tracks what changed rather than how long the history is — the first
+run over a 730-day window spent exactly one detail call. Days resolve newest
+first and stop at a budget, so a backlog sheds its oldest end rather than
+today's, and re-reading on a changed count is what lets a session edited or
+deleted in the app still correct itself.
+
+The single fragile assumption is the wording. If a Puuush release renames
+`Total Reps`, the parse stops matching — so it warns and skips the day rather
+than writing a zero, which the page would otherwise render as an ordinary rest
+day. A silent zero would be indistinguishable from not having trained.
 
 ### Screen time — sound, but only as durable as this Mac
 
