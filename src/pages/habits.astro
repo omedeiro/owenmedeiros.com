@@ -42,19 +42,6 @@ const HABITS = [
     summary: (total: number) => `${total.toFixed(0)} mi total`,
   },
   {
-    data: pushups as Habit,
-    caption: "darker = more",
-    empty: "none",
-    format: (d: Day) => {
-      const reps = `${d.value} rep${d.value === 1 ? "" : "s"}`;
-      // Most days are a single set, and saying so on every one of them is noise;
-      // the count only earns its place once a day holds more than one.
-      const sessions = Number(d.extra?.count) || 1;
-      return sessions > 1 ? `${reps} · ${sessions} sessions` : reps;
-    },
-    summary: (total: number) => `${total.toFixed(0)} reps total`,
-  },
-  {
     data: commits as Habit,
     caption: "darker = more",
     empty: "none",
@@ -87,6 +74,19 @@ const HABITS = [
       return parts.join(" · ");
     },
     summary: (total: number) => `${total.toFixed(0)} sessions`,
+  },
+  {
+    data: pushups as Habit,
+    caption: "darker = more",
+    empty: "none",
+    format: (d: Day) => {
+      const reps = `${d.value} rep${d.value === 1 ? "" : "s"}`;
+      // Most days are a single set, and saying so on every one of them is noise;
+      // the count only earns its place once a day holds more than one.
+      const sessions = Number(d.extra?.count) || 1;
+      return sessions > 1 ? `${reps} · ${sessions} sessions` : reps;
+    },
+    summary: (total: number) => `${total.toFixed(0)} reps total`,
   },
 ];
 
@@ -241,7 +241,7 @@ const updated = [running, pushups, stretching, screentime, commits]
   .pop();
 ---
 
-<Base title="Habits — Owen Medeiros" description="Daily habit tracking: running, push-ups, stretching, screen time, and commits." wide>
+<Base title="Habits — Owen Medeiros" description="Daily habit tracking: running, commits, screen time, stretching, and push-ups." wide>
   <h1>Habits</h1>
   <p>
     Five things I track, back to {earliestKey.slice(0, 4)}. Each block is one habit; the seven
@@ -268,7 +268,7 @@ const updated = [running, pushups, stretching, screentime, commits]
   <div class="habits-chart">
     <div class="habits-scroll">
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img"
-           aria-label={`Heatmaps of running, push-ups, stretching, screen time, and commits since ${earliestKey.slice(0, 4)}`}>
+           aria-label={`Heatmaps of running, commits, screen time, stretching, and push-ups since ${earliestKey.slice(0, 4)}`}>
         {columns.map((column) => (
           <g>
             <text class="habits-name" x={column.x} y={12}>{column.label}</text>
