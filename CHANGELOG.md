@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.8.2 — 2026-09-12
+
+### Added
+
+- A **Google Scholar** link in the site footer and in the `/about` contact list, after LinkedIn. The profile id is the one `scripts/fetch_scholar.py` already defaults to, so the link and the publication-fetching script now point at the same profile rather than only the script knowing it
+
 ## 2.8.1 — 2026-09-12
 
 ### Changed

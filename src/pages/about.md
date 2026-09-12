@@ -43,5 +43,6 @@ I'm always open to discussing new opportunities, interesting projects, or just h
 - Email: [medeirosowen@gmail.com](mailto:medeirosowen@gmail.com)
 - GitHub: [omedeiro](https://github.com/omedeiro)
 - LinkedIn: [owenmedeiros](https://linkedin.com/in/owenmedeiros)
+- Google Scholar: [o0Esya8AAAAJ](https://scholar.google.com/citations?user=o0Esya8AAAAJ)
 
 **Areas of interest:** superconducting electronics, single photon detection, quantum computing, microwave design, photonics.
