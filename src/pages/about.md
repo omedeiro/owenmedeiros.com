@@ -44,5 +44,6 @@ I'm always open to discussing new opportunities, interesting projects, or just h
 - GitHub: [omedeiro](https://github.com/omedeiro)
 - LinkedIn: [owenmedeiros](https://linkedin.com/in/owenmedeiros)
 - Google Scholar: [o0Esya8AAAAJ](https://scholar.google.com/citations?user=o0Esya8AAAAJ)
+- ORCID: [0000-0002-8144-8741](https://orcid.org/0000-0002-8144-8741)
 
 **Areas of interest:** superconducting electronics, single photon detection, quantum computing, microwave design, photonics.
