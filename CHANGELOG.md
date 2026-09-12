@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.8.1 — 2026-09-12
+
+### Changed
+
+- Push-ups now sit in the rightmost column on `/habits` rather than second from the left. It is the newest habit and the shortest history, so leading with it put the emptiest block next to the longest one; moving it to the end lets the columns read roughly oldest-first. The summary table and the SVG `aria-label` follow the same order
+
 ## 2.8.0 — 2026-09-10
 
 ### Added
