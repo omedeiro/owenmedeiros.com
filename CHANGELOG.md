@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.8.3 — 2026-09-12
+
+### Added
+
+- An **ORCID** link in the site footer and in the `/about` contact list, after Google Scholar
+
 ## 2.8.2 — 2026-09-12
 
 ### Added
