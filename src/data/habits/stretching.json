@@ -3,7 +3,7 @@
   "label": "Stretching",
   "source": "Bend",
   "unit": "sessions",
-  "updated_at": "2026-09-11T12:55:02Z",
+  "updated_at": "2026-09-13T02:21:46Z",
   "days": {
     "2026-08-02": {
       "value": 1,
@@ -200,6 +200,9 @@
       "value": 1
     },
     "2026-09-11": {
+      "value": 1
+    },
+    "2026-09-13": {
       "value": 1
     }
   }
