@@ -3,7 +3,7 @@
   "label": "Screen time",
   "source": "macOS + iPhone",
   "unit": "h",
-  "updated_at": "2026-09-13T16:00:03Z",
+  "updated_at": "2026-09-14T03:03:54Z",
   "days": {
     "2026-07-26": {
       "value": 4.7322,
@@ -324,9 +324,10 @@
       }
     },
     "2026-09-13": {
-      "value": 0.8459,
+      "value": 2.9545,
       "extra": {
-        "iphone_h": 0.846
+        "mac_h": 1.038,
+        "iphone_h": 1.916
       }
     }
   }
