@@ -29,7 +29,28 @@ const hm = (hours: number) => {
   return `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, "0")}m`;
 };
 
-const HABITS = [
+/**
+ * Screen time is the one habit here I want to go *down*, so "did it at all"
+ * cannot be the win: a run of days that merely recorded usage measures the sync
+ * working, not the habit. A day counts instead when the two devices together
+ * stay at or under this many hours.
+ */
+const SCREEN_TIME_TARGET_H = 2;
+
+/** What a summary line gets to work with — only days that recorded something. */
+type Stats = { total: number; days: number; lightest: number };
+
+type HabitView = {
+  data: Habit;
+  caption: string;
+  empty: string;
+  format: (d: Day) => string;
+  summary: (s: Stats) => string;
+  /** What a day has to do to count toward this habit's streak; defaults to `didIt`. */
+  counts?: (d: Day) => boolean;
+};
+
+const HABITS: HabitView[] = [
   {
     data: running as Habit,
     caption: "darker = further",
@@ -39,14 +60,14 @@ const HABITS = [
       const secs = Number(d.extra?.moving_time_s) || 0;
       return secs ? `${miles} · ${Math.round(secs / 60)} min` : miles;
     },
-    summary: (total: number) => `${total.toFixed(0)} mi total`,
+    summary: (s: Stats) => `${s.total.toFixed(0)} mi total`,
   },
   {
     data: commits as Habit,
     caption: "darker = more",
     empty: "none",
     format: (d: Day) => `${d.value} commit${d.value === 1 ? "" : "s"}`,
-    summary: (total: number) => `${total.toFixed(0)} total`,
+    summary: (s: Stats) => `${s.total.toFixed(0)} total`,
   },
   {
     data: screentime as Habit,
@@ -59,7 +80,11 @@ const HABITS = [
       }
       return parts.join(" · ");
     },
-    summary: (total: number, active: number) => `${hm(total / Math.max(active, 1))} a day`,
+    // Nothing here is a total worth quoting — an hour count only means
+    // something against a day, so this is the average, with the lightest day
+    // beside it as the number actually worth beating.
+    summary: (s: Stats) => `${hm(s.total / s.days)} a day · lightest ${hm(s.lightest)}`,
+    counts: (d: Day) => d.value > 0 && d.value <= SCREEN_TIME_TARGET_H,
   },
   {
     data: stretching as Habit,
@@ -73,7 +98,7 @@ const HABITS = [
       else if (d.extra?.minutes) parts.push(`${Math.round(Number(d.extra.minutes))} min`);
       return parts.join(" · ");
     },
-    summary: (total: number) => `${total.toFixed(0)} sessions`,
+    summary: (s: Stats) => `${s.total.toFixed(0)} sessions`,
   },
   {
     data: pushups as Habit,
@@ -86,7 +111,7 @@ const HABITS = [
       const sessions = Number(d.extra?.count) || 1;
       return sessions > 1 ? `${reps} · ${sessions} sessions` : reps;
     },
-    summary: (total: number) => `${total.toFixed(0)} reps total`,
+    summary: (s: Stats) => `${s.total.toFixed(0)} reps total`,
   },
 ];
 
@@ -136,24 +161,36 @@ function level(value: number, scale: Scale | null): number {
 
 const LEVEL_OPACITY = [0, 0.22, 0.44, 0.68, 1];
 
-/** Consecutive-day streaks, walking the calendar from first record to today. */
-function streaks(days: Record<string, Day>, today: Date) {
-  const active = new Set(Object.keys(days).filter((k) => days[k].value > 0));
-  if (!active.size) return { current: 0, longest: 0 };
+/** A day counts for its habit unless that habit says otherwise — see `counts`. */
+const didIt = (d: Day) => d.value > 0;
 
-  const first = new Date([...active].sort()[0] + "T00:00:00");
+/**
+ * Consecutive-day streaks, walking the calendar from first record to today.
+ *
+ * `counts` decides what a good day is, which is the whole difference between a
+ * habit to build and one to cut back: four of these count a day the moment the
+ * thing happened, screen time only when it stayed under its target. A day with
+ * no record at all never counts either way — an unsynced day is unknown, not
+ * good — which is also why the run is walked over the calendar rather than over
+ * the recorded keys.
+ */
+function streaks(days: Record<string, Day>, today: Date, counts: (d: Day) => boolean) {
+  const good = new Set(Object.keys(days).filter((k) => counts(days[k])));
+  if (!good.size) return { current: 0, longest: 0 };
+
+  const first = new Date([...good].sort()[0] + "T00:00:00");
   let longest = 0;
   let run = 0;
   for (const cursor = new Date(first); cursor <= today; cursor.setDate(cursor.getDate() + 1)) {
-    run = active.has(dayKey(cursor)) ? run + 1 : 0;
+    run = good.has(dayKey(cursor)) ? run + 1 : 0;
     longest = Math.max(longest, run);
   }
 
   // Today may simply not have synced yet, so a streak ending yesterday still counts.
   let current = 0;
   const cursor = new Date(today);
-  if (!active.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
-  while (active.has(dayKey(cursor))) {
+  if (!good.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+  while (good.has(dayKey(cursor))) {
     current += 1;
     cursor.setDate(cursor.getDate() - 1);
   }
@@ -210,7 +247,9 @@ const columns = HABITS.map((habit, index) => {
   const scale = scaleFor(days);
   const values = Object.values(days).map((d) => d.value).filter((v) => v > 0);
   const total = values.reduce((a, b) => a + b, 0);
-  const { current, longest } = streaks(days, today);
+  const counts = habit.counts ?? didIt;
+  const good = Object.values(days).filter(counts).length;
+  const { current, longest } = streaks(days, today, counts);
 
   return {
     x: GUTTER + index * (BLOCK_W + BLOCK_GAP),
@@ -223,8 +262,10 @@ const columns = HABITS.map((habit, index) => {
     format: habit.format,
     empty: habit.empty,
     stats: {
-      summary: values.length ? habit.summary(total, values.length) : "—",
-      active: values.length,
+      summary: values.length
+        ? habit.summary({ total, days: values.length, lightest: Math.min(...values) })
+        : "—",
+      good,
       current,
       longest,
     },
@@ -328,7 +369,7 @@ const updated = [running, pushups, stretching, screentime, commits]
   <table>
     <thead>
       <tr>
-        <th>Habit</th><th>Source</th><th>Amount</th><th>Days</th><th>Streak</th><th>Best</th>
+        <th>Habit</th><th>Source</th><th>Amount</th><th>Good days</th><th>Streak</th><th>Best</th>
       </tr>
     </thead>
     <tbody>
@@ -337,13 +378,22 @@ const updated = [running, pushups, stretching, screentime, commits]
           <td>{column.label}</td>
           <td class="habits-source">{column.source}</td>
           <td>{column.stats.summary}</td>
-          <td>{column.stats.active || "—"}</td>
+          <td>{column.stats.good || "—"}</td>
           <td>{column.stats.current || "—"}</td>
           <td>{column.stats.longest || "—"}</td>
         </tr>
       ))}
     </tbody>
   </table>
+  <p class="caption">
+    Four of these I want more of: a good day is one the thing happened on, and a
+    streak is a run of them. Screen time I want <em>less</em> of, so that reading
+    measures nothing — an unbroken run of days that recorded usage only says the
+    sync is working. It is scored the other way round instead: a good day is one
+    the Mac and the phone together stayed at or under {SCREEN_TIME_TARGET_H}h,
+    and its streaks are runs of those. A day nothing synced counts for neither —
+    unknown is not good.
+  </p>
 </Base>
 
 <script is:inline>

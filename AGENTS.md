@@ -61,6 +61,14 @@ Deploys run automatically via Cloudflare Workers Builds on push to `main` (build
 all sharing the same shape (`days: {"YYYY-MM-DD": {value, extra?}}`). The page buckets
 each habit against **its own** quartiles, so unlike metrics share one five-step ramp.
 
+The summary table scores each habit in the direction it is meant to move. Four of them
+count a day as good the moment the thing happened; **screen time is the one to be cut
+back**, so a day counts only when the Mac and the phone together stay at or under
+`SCREEN_TIME_TARGET_H` (2h) — a habit entry supplies that rule as `counts`, and everything
+else falls back to "recorded anything". Streaking a habit on "did it at all" when the goal
+is less of it measures the sync, not the habit: before this, screen time's best streak was
+simply the length of its history. A day with no record counts for neither direction.
+
 Only two sources have web APIs. Apple has none for either Screen Time or Health —
 `DeviceActivity` is sandboxed so usage data never leaves the device, and HealthKit is
 on-device only — and neither does the Bend app, which syncs into Apple Health. Those
