@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.8.4 — 2026-09-17
+
+### Changed
+
+- The `/habits` summary table now scores each habit in the direction it is meant to move. Screen time is the one of the five to be cut back, so counting a day the moment usage was recorded measured the sync rather than the habit — its "best streak" was simply the length of its history, and grew by one every night whatever the numbers said. A day of screen time now counts only when the Mac and the phone together stay at or under 2h, so the streak and best columns read as runs of days under target; a habit supplies that rule as `counts` and the other four keep the old "did it at all". A day with no record counts for neither direction — an unsynced day is unknown, not good
+- Screen time's **Amount** cell carries the lightest day beside the daily average (`2h 10m a day · lightest 0h 07m`), which is the number worth beating when the goal is less. The **Days** column is now **Good days**, since for screen time it counts days on target rather than days with data, and a note under the table says which way each habit is scored
+
 ## 2.8.3 — 2026-09-12
 
 ### Added
