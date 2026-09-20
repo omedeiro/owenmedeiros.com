@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.8.5 — 2026-09-20
+
+### Fixed
+
+- A stretching payload can no longer take a session back off a day it already recorded. The Shortcut sends a rolling window of recent Bend workouts and every day it touches is recounted from scratch, which is what makes re-sending safe — but a window has an edge, and the day at that edge is cut off partway through. `write_habit` merges per day by replacing the whole record, so the partial recount won. On 2026-09-20 a 25-event window whose oldest workout landed mid-morning on 8/25 rewrote that day from two sessions to one, three weeks after a full Health export had measured both, on a run that was green and looked like every other. `_richer` in `import_shortcut_stretching.py` now decides each day: a higher count wins, and on a tie the record carrying detail wins. A windowed payload may raise a day and never lower it
+- The same replace had been stripping hand-transcribed days. `backfill_stretching.py` filled 9/2, 9/3, 9/6 and 9/9 from Bend's Recent History on 2026-09-10 — days Bend writes no HealthKit record for at all — and the very next Shortcut run, re-covering those dates with bare counted lines, took `routines` and `backfilled` straight back out of them. Detail now survives a payload that carries none, so the tooltip keeps the routine name and the day keeps its provenance
+- 2026-08-25 is restored to the two sessions it held, and the four backfilled days to their routine names. The importer logs `kept the recorded value on N day(s) this window covered only in part` when it holds a day back, so the window sliding off the back of a day reads as itself rather than as a session going missing
+
+### Changed
+
+- `docs/bend-stretching-shortcut.md`, `docs/habits-pipeline.md`, `AGENTS.md`, and the `habits-data` skill record the window's edge as the thing that makes re-sending non-trivial, and that the guard is deliberately one-way: a count that genuinely needs to come down comes down through `import_health.py`, which reads a whole export and so is authoritative about a session's *absence* in a way a window never is
+- The shortcut guide now says widening the window is free — raising Toolbox Pro's event count only buys a longer repair horizon for a dead trigger — and, in the same breath, that it cannot fill a day Bend never wrote to Health. Reaching further back cannot forward a record that does not exist, and on this account that, not the window width, is what empties a day
+
 ## 2.8.4 — 2026-09-17
 
 ### Changed

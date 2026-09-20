@@ -23,8 +23,17 @@ whichever way it arrived. Everything is recomputed from scratch on every run —
 the whole drop folder is re-read, and spans are deduped on their exact
 ``(start, end)`` pair — so re-running is idempotent and a Shortcut whose window
 overlaps the previous run's cannot double-count a session. That is what makes a
-rolling 7-day window safe to send daily, which in turn is what makes a missed
-day self-healing.
+rolling window safe to send daily, which in turn is what makes a missed day
+self-healing: send a fortnight every time and a fortnight of failed triggers
+repairs itself.
+
+The recompute is per day, though, and a window has an edge. Whatever the
+Shortcut scopes by — a count of recent workouts, or a date range — its oldest
+day is cut off partway through, so re-sending is only safe as long as a partial
+recount cannot overwrite a complete one. ``_richer`` is what guarantees that: a
+windowed payload may raise a day and never lower it. Widening the window makes
+that guard matter more, not less, since a wider window slides back across more
+days that are already recorded.
 
 The payload may also be a list of **workout objects** rather than lines. That is
 the practical case: Bend writes only `HKWorkout` records, stock Shortcuts cannot
@@ -371,6 +380,43 @@ def read_drop(drop_dir: str, source: str = ""):
     return spans, _combine(days, tally), skipped
 
 
+def _richer(old: dict, new: dict) -> dict:
+    """Pick whichever of two records for the same day saw more of that day.
+
+    A payload is authoritative about the sessions it *contains*, never about
+    the ones it leaves out, and a rolling window always leaves some out. The
+    shortcut scopes by a count of recent workouts rather than by a date, so
+    its oldest day is cut off partway through; and the whole point of sending
+    a window is that it keeps sliding back across days already recorded. Left
+    to the per-day replace in ``write_habit``, that clipped edge overwrites a
+    complete count with a partial one -- 2026-08-25 went from two sessions to
+    one exactly that way on 2026-09-20, weeks after both had been recorded and
+    with nothing wrong on the phone.
+
+    Hand-transcribed days fail the same way for a different reason. Bend
+    writes no HealthKit record at all for some routines (see
+    ``bend-history.csv``), so a window re-covering such a day arrives carrying
+    less than the file already holds and flattens the routine name out of the
+    tooltip -- which is what happened to four days on 2026-09-11, the first
+    run after they were backfilled.
+
+    So a higher count wins, and on a tie the record carrying detail wins. That
+    still lets a bare counted day upgrade into a real span with minutes and a
+    routine name, while stopping a bare counted day from stripping either back
+    out. The rule is deliberately one-way: a windowed payload can raise a day
+    and never lower it. Correcting a day downwards -- a session deleted in
+    Health, a duplicate that should never have counted -- is what a full
+    export through ``import_health.py`` is for, and that path is untouched.
+    """
+    # .get rather than [] on the stored side: that record came off disk and may
+    # have been hand-edited, and a missing key there should let the payload
+    # through rather than wedge every future import behind a KeyError.
+    was, now = old.get("value", 0), new["value"]
+    if now != was:
+        return new if now > was else old
+    return new if new.get("extra") else old
+
+
 def merge_and_write(
     spans: dict[tuple[float, float], str],
     counted: dict[str, int],
@@ -407,6 +453,28 @@ def merge_and_write(
 
     if not days:
         return days
+
+    # Reconcile against the file before handing it to write_habit, whose merge
+    # is a per-day replace and so would let the window's clipped edge undo a
+    # day that was recorded completely weeks ago. See _richer.
+    existing = hc.load_habit("stretching", out_dir).get("days") or {}
+    held: list[str] = []
+    for key, rec in sorted(days.items()):
+        was = existing.get(key)
+        if was is None:
+            continue
+        if _richer(was, rec) is was:
+            days[key] = was
+            if was != rec:
+                held.append(key)
+    if held:
+        # Worth saying out loud: this is the window sliding off the back of a
+        # day, not a session going missing, and the two look identical in the
+        # heatmap afterwards.
+        hc.log(
+            f"  kept the recorded value on {len(held)} day(s) this window "
+            f"covered only in part: {', '.join(held)}"
+        )
 
     hc.write_habit(
         "stretching", "Stretching", "Bend", "sessions",

@@ -3,7 +3,7 @@
   "label": "Stretching",
   "source": "Bend",
   "unit": "sessions",
-  "updated_at": "2026-09-20T20:17:11Z",
+  "updated_at": "2026-09-20T22:30:38Z",
   "days": {
     "2026-08-02": {
       "value": 1,
@@ -149,7 +149,7 @@
       }
     },
     "2026-08-25": {
-      "value": 1
+      "value": 2
     },
     "2026-08-26": {
       "value": 1
@@ -173,10 +173,18 @@
       "value": 1
     },
     "2026-09-02": {
-      "value": 1
+      "value": 1,
+      "extra": {
+        "routines": "Tech Neck",
+        "backfilled": true
+      }
     },
     "2026-09-03": {
-      "value": 1
+      "value": 1,
+      "extra": {
+        "routines": "Tech Neck",
+        "backfilled": true
+      }
     },
     "2026-09-04": {
       "value": 1
@@ -185,7 +193,11 @@
       "value": 1
     },
     "2026-09-06": {
-      "value": 1
+      "value": 1,
+      "extra": {
+        "routines": "Hamstrings 1",
+        "backfilled": true
+      }
     },
     "2026-09-07": {
       "value": 1
@@ -194,7 +206,11 @@
       "value": 1
     },
     "2026-09-09": {
-      "value": 1
+      "value": 1,
+      "extra": {
+        "routines": "Tech Neck",
+        "backfilled": true
+      }
     },
     "2026-09-10": {
       "value": 1

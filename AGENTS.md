@@ -187,9 +187,14 @@ identically whichever way it arrived, and sending it both ways is harmless.
 The stretching shortcut may need to read either workouts or mindful sessions, depending on
 what Bend writes — it normalises to text lines on the phone, so neither the Mac nor the
 runner cares which. Overlapping windows are safe: identical spans are deduped by exact
-`(start, end)` and every affected day is recounted, so a 7-day window sent daily cannot
+`(start, end)` and every affected day is recounted, so a window sent daily cannot
 count a session twice — and a day the phone misses is repaired by the next run rather than
-lost.
+lost. The recount is one-way: because a window's oldest day is clipped partway through,
+`_richer` lets a payload raise a day's count and never lower it, and never lets a bare
+counted day flatten one carrying minutes or a routine name. That is what makes widening
+the window free, and it is not theoretical — a clipped edge silently took a session off
+2026-08-25 on 2026-09-20. A count that must come *down* comes down through
+`import_health.py`, which sees a whole export rather than a window.
 
 One thing the GitHub route needs that the Mac route does not: **a timezone**. Sessions are
 filed under the local date they started, so the runner has to agree with the phone about

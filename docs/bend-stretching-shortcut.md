@@ -37,6 +37,23 @@ recounted from scratch, so re-sending a day cannot double-count it — which
 means a run the phone misses (locked, offline, out of battery) is repaired by
 the next one instead of leaving a permanent hole.
 
+**A window has an edge, and the edge is a partial day.** Scoped by a count of
+events or by a date range, the oldest day in the window is cut off partway
+through — the sessions before the cut are real, they are simply outside what
+was sent. Re-sending therefore used to be able to *lower* a day: on 2026-09-20
+a window whose 25th-oldest workout landed mid-morning on 8/25 recounted that
+day as one session and overwrote the two that a full Health export had measured
+three weeks earlier. Nothing was wrong on the phone; the payload was just not
+being asked the question it could answer. `_richer` in
+`import_shortcut_stretching.py` now settles it: a windowed payload may raise a
+day's count and never lower it, and a day carrying detail (minutes, a routine
+name) is never flattened by a bare one. A count that genuinely needs to come
+down — a session deleted in Health — comes down through a full export
+(`import_health.py`), which is authoritative in a way a window is not.
+
+Which means **widening the window is free**. It slides back across more days
+that are already recorded, and that is now a no-op rather than a hazard.
+
 ## Route A — straight to GitHub (the one that runs daily)
 
 The Shortcut POSTs a `repository_dispatch`; the workflow merges, commits, and
@@ -110,6 +127,17 @@ Both of those are fiddly in Shortcuts and both fail silently. So:
    weeks rather than for a week. Re-sending costs nothing — days are recomputed
    from scratch, sessions dedupe, and the workflow skips the commit when nothing
    actually changed. No source filter needed; the importer does that.
+
+   **Raise the count if you want a longer memory.** 50 or 100 events is not
+   meaningfully more work for the phone or the runner — the payload is a few
+   KB either way, the importer is standard-library only, and the workflow
+   still skips the commit when no day actually moved. The only thing a wider
+   window changes is how far back a dead trigger can be repaired from: 25
+   events is about three and a half weeks of this, 100 is about three months.
+   What a wider window will *not* do is fill a day Bend never wrote to Health
+   — see *Some routines never reach Health* below, which is what empties a day
+   on this account. Reaching further back cannot forward a record that does
+   not exist.
 2. **Get Contents of URL** — as in *Posting it* below, with the workouts from
    step 1 as `sessions`.
 
@@ -252,6 +280,21 @@ echo '2026-08-26T07:12:00-0400,2026-08-26T07:20:00-0400,Wake Up' \
   `yyyy-MM-dd'T'HH:mm:ssZ`, and `Z` there means the numeric offset (`-0400`),
   not a literal Z. This is deliberately the one case that fails loudly — an
   empty week is silent, a broken Shortcut is not.
+- **A day's count went *down*.** The window's oldest day is a partial day, and
+  before 2.8.5 a partial recount could overwrite a complete one. It no longer
+  can: the importer logs `kept the recorded value on N day(s) this window
+  covered only in part` and leaves those days as they were. If a count is
+  genuinely too high — a session deleted in Health, a duplicate that should
+  never have counted — the shortcut route will not bring it down by design;
+  re-import a full export with `import_health.py`, or edit the day out of
+  `stretching.json` by hand.
+- **Routine names stopped showing in the tooltip.** The payload is arriving as
+  display strings rather than as workout objects, so each line carries a date
+  and nothing else — see *If the workouts arrive as display strings* above.
+  Worth knowing: a display string carries no source either, so `--source Bend`
+  has nothing to match on and cannot drop a non-Bend workout from the window.
+  Toolbox Pro's **Flexibility** type filter is the only thing keeping a run
+  out on that path, which is a reason to leave it set.
 - **Sessions land on the wrong day.** A session is filed under the local date it
   started, so the runner has to agree with the phone about "local". That is what
   `TZ: America/New_York` in the workflow is for — change it if you move.

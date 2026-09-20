@@ -170,7 +170,28 @@ Health only arrives if something on the phone pushes it:
 All three land in the same `union()` and `stretch_days()`, so a session counts the same
 however it arrived and the routes can overlap freely. Spans dedupe on the exact
 `(start, end)` pair and every affected day is recounted, which is what makes a rolling
-7-day window safe to send daily — and a missed day self-healing.
+window safe to send daily — and a missed day self-healing.
+
+**A recount from a window is partial at its oldest day, and must never be allowed to
+overwrite a complete one.** `write_habit` merges per *day*, replacing the whole record,
+so before `_richer` existed the shortcut's clipped edge could quietly undo work: on
+2026-09-20 a 25-event window whose oldest workout landed mid-morning on 8/25 rewrote that
+day from two sessions to one, weeks after a full export had measured both; and on
+2026-09-11, the first run after `backfill_stretching.py` filled 9/2, 9/3, 9/6 and 9/9,
+bare counted days re-covering those dates stripped `routines` and `backfilled` straight
+back out. Both looked like ordinary green runs. `_richer` in
+`import_shortcut_stretching.py` now decides per day: a higher count wins, and on a tie
+the record carrying `extra` wins — so a counted day still upgrades to a real span with
+minutes, but cannot downgrade one. The rule is deliberately one-way; a count that must
+come down comes down through `import_health.py`, which reads a whole export and so is
+authoritative about a session's *absence* in a way a window can never be. Do not
+"simplify" this into a plain overwrite, and do not extend it to `import_health.py`.
+
+Corollary worth stating because it is the usual question: **widening the shortcut's
+window is free and does not fix missing days.** More events re-covered is now a no-op,
+so raising Toolbox Pro's event count only buys a longer repair horizon for a dead
+trigger. It cannot fill a day Bend never wrote to Health — see Tech Neck below, which is
+what actually empties a day here.
 
 **Stock Shortcuts cannot enumerate workouts — do not go looking for a way.**
 `Find Health Samples` covers quantity and category samples only; an `HKWorkout` is
