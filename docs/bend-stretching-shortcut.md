@@ -37,6 +37,26 @@ recounted from scratch, so re-sending a day cannot double-count it — which
 means a run the phone misses (locked, offline, out of battery) is repaired by
 the next one instead of leaving a permanent hole.
 
+**A window has an edge, and the edge is a partial day.** Scoped by a count of
+events or by a date range, the oldest day in the window is cut off partway
+through — the sessions before the cut are real, they are simply outside what
+was sent. Re-sending therefore used to be able to *lower* a day: on 2026-09-20
+a window whose 25th-oldest workout landed mid-morning on 8/25 recounted that
+day as one session and overwrote the two that a full Health export had measured
+three weeks earlier. Nothing was wrong on the phone; the payload was just not
+being asked the question it could answer. `_richer` in
+`import_shortcut_stretching.py` now settles it: a windowed payload may raise a
+day's count and never lower it, and a day carrying detail (minutes, a routine
+name) is never flattened by a bare one. A count that genuinely needs to come
+down — a session deleted in Health — comes down through a full export
+(`import_health.py`), which is authoritative in a way a window is not.
+
+Which means **widening the window is free**. It slides back across more days
+that are already recorded, and that is now a no-op rather than a hazard. At
+100 events the window currently holds every Bend workout in Health at once, so
+there is no clipped edge at all; the guard starts mattering again on the day
+Health holds more than 100 of them.
+
 ## Route A — straight to GitHub (the one that runs daily)
 
 The Shortcut POSTs a `repository_dispatch`; the workflow merges, commits, and
@@ -103,13 +123,30 @@ The importer reads workout *objects* directly and filters them by source in
 Python, so the phone does not have to format dates or match source strings.
 Both of those are fiddly in Shortcuts and both fail silently. So:
 
-1. **Get Workouts** (Toolbox Pro) — type **Flexibility**, **last 25 events**.
+1. **Get Workouts** (Toolbox Pro) — type **Flexibility**, **last 100 events**.
    Toolbox Pro scopes by a count of events, not by a date range, which suits
-   this better than a window would: at roughly a session a day it reaches back
-   about 25 days, so a run the phone misses is repaired by the next one for
-   weeks rather than for a week. Re-sending costs nothing — days are recomputed
-   from scratch, sessions dedupe, and the workflow skips the commit when nothing
-   actually changed. No source filter needed; the importer does that.
+   this better than a window would: at roughly a session a day, 100 events
+   reaches back about three months, so a run the phone misses is repaired by
+   the next one for a season rather than for a week. Re-sending costs nothing
+   — days are recomputed from scratch, sessions dedupe, and the workflow skips
+   the commit when nothing actually changed. No source filter needed; the
+   importer does that.
+
+   **A bigger count is close to free**, which is why this is 100 and not 25.
+   The payload is a few KB either way, the importer is standard-library only,
+   and a day that has not moved is not committed. The only thing the count
+   buys is how far back a dead trigger can be repaired from. It was raised
+   from 25 on 2026-09-25, and the effect was immediate and visible: 8/25 had
+   been sitting at one session since a 25-event window clipped it, and the
+   first 100-event run put the whole day back inside the window and recounted
+   it as two.
+
+   What a wider window will *not* do is fill a day Bend never wrote to Health
+   — see *Some routines never reach Health* below, which is what empties a day
+   on this account. Reaching further back cannot forward a record that does
+   not exist. The gaps at 9/12, 9/14, 9/17 and 9/23 all survived the widening,
+   which is the signature of exactly that: check them against Bend's Recent
+   History, and anything real there belongs in `scripts/bend-history.csv`.
 2. **Get Contents of URL** — as in *Posting it* below, with the workouts from
    step 1 as `sessions`.
 
@@ -252,6 +289,21 @@ echo '2026-08-26T07:12:00-0400,2026-08-26T07:20:00-0400,Wake Up' \
   `yyyy-MM-dd'T'HH:mm:ssZ`, and `Z` there means the numeric offset (`-0400`),
   not a literal Z. This is deliberately the one case that fails loudly — an
   empty week is silent, a broken Shortcut is not.
+- **A day's count went *down*.** The window's oldest day is a partial day, and
+  before 2.8.5 a partial recount could overwrite a complete one. It no longer
+  can: the importer logs `kept the recorded value on N day(s) this window
+  covered only in part` and leaves those days as they were. If a count is
+  genuinely too high — a session deleted in Health, a duplicate that should
+  never have counted — the shortcut route will not bring it down by design;
+  re-import a full export with `import_health.py`, or edit the day out of
+  `stretching.json` by hand.
+- **Routine names stopped showing in the tooltip.** The payload is arriving as
+  display strings rather than as workout objects, so each line carries a date
+  and nothing else — see *If the workouts arrive as display strings* above.
+  Worth knowing: a display string carries no source either, so `--source Bend`
+  has nothing to match on and cannot drop a non-Bend workout from the window.
+  Toolbox Pro's **Flexibility** type filter is the only thing keeping a run
+  out on that path, which is a reason to leave it set.
 - **Sessions land on the wrong day.** A session is filed under the local date it
   started, so the runner has to agree with the phone about "local". That is what
   `TZ: America/New_York` in the workflow is for — change it if you move.

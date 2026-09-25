@@ -120,19 +120,27 @@ history screen sit on the same scale as days measured through HealthKit, with
 nothing estimated.
 
 Bend syncs into Apple Health, and Health goes no further on its own. The phone
-therefore pushes: a scheduled Shortcut reads the last seven days of Bend
+therefore pushes: a scheduled Shortcut reads the last few weeks of Bend
 workouts, POSTs them as a `repository_dispatch`, and
 `.github/workflows/stretching.yml` merges and commits them. Nothing but the
 phone has to be awake, which is what separates this from the Mac-bound habits.
 `docs/bend-stretching-shortcut.md` is the build guide.
 
-Two properties make the daily schedule safe rather than merely convenient:
+Three properties make the daily schedule safe rather than merely convenient:
 
 - **A rolling window, recomputed.** Spans are deduped on their exact
   `(start, end)` pair and every affected day is recounted from scratch, so
   re-sending a day cannot double-count it. A run the phone misses is repaired
   by the next one instead of leaving a permanent hole — the opposite of screen
   time, where a missed day is gone.
+- **The recount can only raise a day.** A window's oldest day is cut off
+  partway through, so its recount is partial by construction; letting that
+  partial count replace a complete one is how 2026-08-25 lost a session on
+  2026-09-20, three weeks after a full export had measured two. `_richer` in
+  `import_shortcut_stretching.py` holds the recorded value in that case, and
+  keeps a day carrying minutes or a routine name from being flattened by a bare
+  one. Correcting a day *downwards* is left to `import_health.py`, which reads
+  a whole export and is authoritative about absence in a way a window is not.
 - **One parser, three transports.** The dispatch payload, the iCloud Drive drop
   file, and a full `export.zip` all reach the same `union()` and
   `stretch_days()`. A session counts the same however it arrived, so the routes
