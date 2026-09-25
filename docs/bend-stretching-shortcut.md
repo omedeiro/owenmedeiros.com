@@ -52,7 +52,10 @@ down — a session deleted in Health — comes down through a full export
 (`import_health.py`), which is authoritative in a way a window is not.
 
 Which means **widening the window is free**. It slides back across more days
-that are already recorded, and that is now a no-op rather than a hazard.
+that are already recorded, and that is now a no-op rather than a hazard. At
+100 events the window currently holds every Bend workout in Health at once, so
+there is no clipped edge at all; the guard starts mattering again on the day
+Health holds more than 100 of them.
 
 ## Route A — straight to GitHub (the one that runs daily)
 
@@ -120,24 +123,30 @@ The importer reads workout *objects* directly and filters them by source in
 Python, so the phone does not have to format dates or match source strings.
 Both of those are fiddly in Shortcuts and both fail silently. So:
 
-1. **Get Workouts** (Toolbox Pro) — type **Flexibility**, **last 25 events**.
+1. **Get Workouts** (Toolbox Pro) — type **Flexibility**, **last 100 events**.
    Toolbox Pro scopes by a count of events, not by a date range, which suits
-   this better than a window would: at roughly a session a day it reaches back
-   about 25 days, so a run the phone misses is repaired by the next one for
-   weeks rather than for a week. Re-sending costs nothing — days are recomputed
-   from scratch, sessions dedupe, and the workflow skips the commit when nothing
-   actually changed. No source filter needed; the importer does that.
+   this better than a window would: at roughly a session a day, 100 events
+   reaches back about three months, so a run the phone misses is repaired by
+   the next one for a season rather than for a week. Re-sending costs nothing
+   — days are recomputed from scratch, sessions dedupe, and the workflow skips
+   the commit when nothing actually changed. No source filter needed; the
+   importer does that.
 
-   **Raise the count if you want a longer memory.** 50 or 100 events is not
-   meaningfully more work for the phone or the runner — the payload is a few
-   KB either way, the importer is standard-library only, and the workflow
-   still skips the commit when no day actually moved. The only thing a wider
-   window changes is how far back a dead trigger can be repaired from: 25
-   events is about three and a half weeks of this, 100 is about three months.
+   **A bigger count is close to free**, which is why this is 100 and not 25.
+   The payload is a few KB either way, the importer is standard-library only,
+   and a day that has not moved is not committed. The only thing the count
+   buys is how far back a dead trigger can be repaired from. It was raised
+   from 25 on 2026-09-25, and the effect was immediate and visible: 8/25 had
+   been sitting at one session since a 25-event window clipped it, and the
+   first 100-event run put the whole day back inside the window and recounted
+   it as two.
+
    What a wider window will *not* do is fill a day Bend never wrote to Health
    — see *Some routines never reach Health* below, which is what empties a day
    on this account. Reaching further back cannot forward a record that does
-   not exist.
+   not exist. The gaps at 9/12, 9/14, 9/17 and 9/23 all survived the widening,
+   which is the signature of exactly that: check them against Bend's Recent
+   History, and anything real there belongs in `scripts/bend-history.csv`.
 2. **Get Contents of URL** — as in *Posting it* below, with the workouts from
    step 1 as `sessions`.
 
