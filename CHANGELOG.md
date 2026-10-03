@@ -4,7 +4,7 @@
 
 ### Added
 
-- **Interactive 3-D scenes on `/projects/tdgl-simulation`**: an S/I/S stack screening a perpendicular field, vortex lines in a normal and a 45°-tilted field, and flux flow through a 3 ξ strip. Each is a rendered image until *Explore in 3-D* loads the scene, which can then be rotated, panned and zoomed, with layers toggled from the legend; the tilted-field figure switches between its two field directions. plotly's gl3d bundle is vendored under `public/projects/tdgl/3d/` and fetched only on that click, so reading the page loads nothing new
+- **Interactive 3-D scenes on `/projects/tdgl-simulation`**: an S/I/S stack screening a perpendicular field, vortex lines in a normal and a 45°-tilted field, flux flow through a 3 ξ strip, and a field-cooled S/I/S ground plane with a 3 × 3 grid of moats, viewed as vortex cores, supercurrent density and field lines. Each is a rendered image until *Explore in 3-D* loads the scene, which can then be rotated, panned and zoomed, with layers toggled from the legend; the tilted-field figure switches between its two field directions. plotly's gl3d bundle is vendored under `public/projects/tdgl/3d/` and fetched only on that click, so reading the page loads nothing new
 - A **Circuits** section on the same page: the notched-wire vortex diode and the four-diode bridge rectifier run as one TDGL device, a self-heating hotspot that switches and latches, and the inductance, AC impedance and capacitance solvers
 
 ### Changed

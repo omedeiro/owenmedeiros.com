@@ -53,7 +53,7 @@ temperature of interest.
 
 ## In three dimensions
 
-Three runs where the thickness and the vacuum around the conductor change the
+Four runs where the thickness and the vacuum around the conductor change the
 answer. Each starts as a rendered image; **Explore in 3-D** loads the scene
 itself, which can be rotated, panned and zoomed, and a legend entry clicked to
 hide a layer.
@@ -74,6 +74,12 @@ hide a layer.
   <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/flux-flow.png"><img src="/projects/tdgl/3d/flux-flow.png" alt="A 3 ξ thick strip carrying current, with vortex tubes crossing it and current streamlines wrapping each core" loading="lazy" /></a></div>
   <div class="tdgl3d-controls" hidden></div>
   <figcaption>A 24 × 10 × 3 ξ strip carrying transport current with its own field included, in B<sub>z</sub> = 0.5 H<sub>c2</sub>. About twelve vortex tubes cross it at a time, straight through the thickness to within a grid cell; new ones enter through the far edge pinched at mid-thickness. Streamlines show the current on the mid-plane, coloured by |J|.</figcaption>
+</figure>
+
+<figure class="tdgl3d" data-title="Field-cooled ground plane with moats" data-scenes='[{"label":"Vortex cores","src":"/projects/tdgl/3d/moats.json"},{"label":"Currents","src":"/projects/tdgl/3d/moats-current.json"},{"label":"Field lines","src":"/projects/tdgl/3d/moats-field.json"}]'>
+  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/moat-grid.png"><img src="/projects/tdgl/3d/moat-grid.png" alt="An S/I/S ground plane with a 3 by 3 grid of square moats, with orange vortex columns running through both metal layers and field lines through the cores and moats" loading="lazy" /></a></div>
+  <div class="tdgl3d-controls" hidden></div>
+  <figcaption>A 36 ξ square S/I/S ground plane (3 ξ metal, 1 ξ oxide, 3 ξ metal) with nine 4 ξ moats etched through it, cooled through T<sub>c</sub> in B<sub>z</sub> = 0.25 H<sub>c2</sub>, about 52 flux quanta. The two layers share no Josephson coupling and start from independent random states, yet 16 of the bottom layer's 18 film vortices end up stacked under one in the top layer. Each layer holds 39 quanta: the bottom keeps two more in the film, the top holds those two in its moats. <em>Currents</em> cuts along the middle row of moats to show |J| in each layer, ringing every core and moat rim. <em>Field lines</em> carries equal flux per line over a map of B<sub>z</sub> in the top metal: λ = 2 ξ against a 5 ξ vortex spacing keeps the field between 0.74 and 1.21 of the applied value.</figcaption>
 </figure>
 
 ## A 3×3 array of 4 µm holes
