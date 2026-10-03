@@ -53,8 +53,7 @@ temperature of interest.
 
 ## In three dimensions
 
-Three runs where the thickness and the vacuum around the conductor change the
-answer. Each starts as a rendered image; **Explore in 3-D** loads the scene
+Runs where the thickness and the vacuum around the conductor change the answer. Each starts as a rendered image; **Explore in 3-D** loads the scene
 itself, which can be rotated, panned and zoomed, and a legend entry clicked to
 hide a layer.
 
@@ -74,6 +73,34 @@ hide a layer.
   <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/flux-flow.png"><img src="/projects/tdgl/3d/flux-flow.png" alt="A 3 ξ thick strip carrying current, with vortex tubes crossing it and current streamlines wrapping each core" loading="lazy" /></a></div>
   <div class="tdgl3d-controls" hidden></div>
   <figcaption>A 24 × 10 × 3 ξ strip carrying transport current with its own field included, in B<sub>z</sub> = 0.5 H<sub>c2</sub>. About twelve vortex tubes cross it at a time, straight through the thickness to within a grid cell; new ones enter through the far edge pinched at mid-thickness. Streamlines show the current on the mid-plane, coloured by |J|.</figcaption>
+</figure>
+
+### A moat grid in a field-cooled S/I/S ground plane
+
+A 36 × 36 ξ ground plane — 3 ξ metal, 1 ξ oxide, 3 ξ metal — with nine 4 ξ moats
+etched through it, cooled through T<sub>c</sub> in B<sub>z</sub> = 0.25 H<sub>c2</sub>,
+about 52 flux quanta over the plane. The two metal layers are coupled only through the
+field and nucleate from independent random starts, yet 16 of the bottom layer's 18 film
+vortices end up stacked on a top-layer vortex within 1.6 ξ. Each layer carries 39 quanta
+in all: the bottom keeps two more in the film, and the top holds those two in its moats
+instead.
+
+<figure class="tdgl3d" data-title="Moat grid, field-cooled" data-scenes='[{"label":"Vortex cores","src":"/projects/tdgl/3d/moats.json"}]'>
+  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/moat-grid.png"><img src="/projects/tdgl/3d/moat-grid.png" alt="S/I/S ground plane with a 3×3 grid of moats, vortex cores drawn as orange tubes through both metal layers" loading="lazy" /></a></div>
+  <div class="tdgl3d-controls" hidden></div>
+  <figcaption>The settled state after 200 τ<sub>GL</sub>. Orange surfaces are the vortex cores, drawn where |ψ| falls below half the vortex-free film at the same depth; blue lines are the field threading the cores and the moats.</figcaption>
+</figure>
+
+<figure class="tdgl3d" data-title="Moat grid, supercurrent" data-scenes='[{"label":"Currents","src":"/projects/tdgl/3d/moats-current.json"}]'>
+  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/moat-grid-current.png"><img src="/projects/tdgl/3d/moat-grid-current.png" alt="Current density and supercurrent streamlines on both metal layers of the moat grid, cut along the middle row of moats" loading="lazy" /></a></div>
+  <div class="tdgl3d-controls" hidden></div>
+  <figcaption>The same state cut along the middle row of moats: the top metal behind the cut, the bottom metal in front with the top layer lifted away, each showing |J| on its mid-plane. Every film vortex carries its own circulating current, peaking about 1 ξ from the core; every moat is ringed by a current sheet along its rim; and the film edge carries the screening current that keeps the remaining flux in.</figcaption>
+</figure>
+
+<figure class="tdgl3d" data-title="Moat grid, field lines" data-scenes='[{"label":"Field lines","src":"/projects/tdgl/3d/moats-field.json"}]'>
+  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/moat-grid-field.png"><img src="/projects/tdgl/3d/moat-grid-field.png" alt="Field lines through the moat grid, coloured by field strength, above a map of Bz on the top metal" loading="lazy" /></a></div>
+  <div class="tdgl3d-controls" hidden></div>
+  <figcaption>Field lines carrying equal flux each, coloured by |B| over the applied field, over B<sub>z</sub> on the top metal's mid-plane. With λ = 2 ξ against a vortex spacing of about 5 ξ the vortex fields overlap, so the field in the stack varies only between 0.74 and 1.21 B<sub>a</sub>. Moats holding three quanta read 1.08–1.12 B<sub>a</sub> at their centres, those holding two 0.99–1.02.</figcaption>
 </figure>
 
 ## A 3×3 array of 4 µm holes
