@@ -645,6 +645,49 @@ const path = Astro.url.pathname.replace(/\/$/, "") || "/";
       .mandel.is-expanded canvas { height: 100%; }
       .mandel.is-expanded figcaption { margin: 0; }
       body.mandel-locked { overflow: hidden; }
+      /* /projects/tdgl-simulation: the sixth page with client-side JS. Each
+         .tdgl3d figure is a static image until "Explore in 3-D" loads plotly
+         and the scene; the script reads --fg/--muted/--border back out, so the
+         plot follows the light and dark palettes. The live plot owns every
+         gesture (rotate, pan, pinch), hence touch-action: none, but only once
+         the reader has asked for it — the image scrolls like any other. */
+      .tdgl3d { margin: 1.75rem 0 1.5rem; }
+      .tdgl3d-stage img { display: block; }
+      .tdgl3d-plot {
+        width: 100%;
+        height: min(70vh, 28rem);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        touch-action: none;
+      }
+      .tdgl3d-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem 0.9rem;
+        margin-top: 0.55rem;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        font-size: 0.8rem;
+      }
+      .tdgl3d-controls[hidden] { display: none; }
+      .tdgl3d-group { display: inline-flex; gap: 0.3rem; }
+      .tdgl3d button {
+        font: inherit;
+        color: var(--fg);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.2rem 0.55rem;
+        cursor: pointer;
+      }
+      .tdgl3d button:hover { border-color: var(--accent); color: var(--accent); }
+      .tdgl3d button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+      .tdgl3d.is-loading button { opacity: 0.55; pointer-events: none; }
+      .tdgl3d-error {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin: 0.4rem 0 0;
+      }
       footer.site {
         margin-top: 4rem;
         padding-top: 1.25rem;
