@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.10.0 — 2026-10-03
+
+### Added
+
+- **Single-photon detection** on `/projects/tdgl-simulation`: the Zotova & Vodolazov NbN replication (detection current against photon energy, absorption position and width, and one detection event frame by frame) and latency against absorption position in wide WSi strips after Patel *et al.*
+- **Heater nanocryotrons** on the same page: a planar hTron switching and resetting, the same pulse latching under a larger load, a stacked 3-D hTron with heat crossing the oxide, and its switching current against heater current
+- Both capabilities in the page's "What it simulates" list
+
 ## 2.9.0 — 2026-10-03
 
 ### Added
