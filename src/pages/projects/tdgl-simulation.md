@@ -1,13 +1,21 @@
 ---
 layout: ../../layouts/Md.astro
 title: TDGL Simulation
+description: tdgl3d, a fully 3-D superconducting circuit simulator built on the time-dependent Ginzburg–Landau equations, with vortex dynamics, transport current, self-heating, and inductance and capacitance extraction. Includes interactive 3-D scenes.
 ---
 
-A 3D solver for the time-dependent Ginzburg–Landau equations, used to study vortex
-and phase dynamics in type-II superconductors. The order parameter ψ and the gauge
-field live on a structured finite-difference grid, with **A** stored as link
-variables (Peierls phases) on the edges so that gauge invariance and flux
-quantisation hold exactly on the lattice rather than approximately.
+tdgl3d is a fully three-dimensional simulator for superconducting devices and
+circuits, built on the time-dependent Ginzburg–Landau (TDGL) equations. It
+resolves what circuit models leave out: where vortices enter, how they move under
+a bias current, where they dissipate, and how much the film heats. Stacked
+metal–insulator–metal layers, holes, notches and the vacuum around the conductor
+are all on one 3-D grid, so the third dimension is part of the physics rather than
+an extrusion of a 2-D film.
+
+The order parameter ψ and the gauge field live on a structured finite-difference
+grid, with **A** stored as link variables (Peierls phases) on the edges so that
+gauge invariance and flux quantisation hold exactly on the lattice rather than
+approximately.
 
 $$
 \frac{\partial \psi}{\partial t} = (\nabla - i\mathbf{A})^2 \psi + (1 - |\psi|^2)\,\psi
@@ -19,7 +27,54 @@ $$
 
 Everything is dimensionless: lengths in coherence lengths ξ, fields in $B_{c2}$.
 Three numbers fix the normalisation — $\Phi_0 = 2\pi$, $\lambda = \kappa$ (in ξ),
-and $H_{c2} = 1$.
+and $H_{c2} = 1$. Devices drawn in SI units are converted with ξ taken at the
+temperature of interest.
+
+## What it simulates
+
+- **Vortex dynamics in 3-D** — entry, pinning on holes, lattice formation and flux
+  flow, with vortex lines free to bend and tilt through the thickness.
+- **Heterostructures** — S/I/S stacks, inclusions, etched (vacuum) holes and
+  regions of locally suppressed $T_c$, coupled only through the field.
+- **Transport current** — normal-metal terminals inject current, with the
+  electric potential solved at every step. Either the film is thin and does not
+  screen (pyTDGL's limit), or the current's own magnetic field is carried
+  self-consistently.
+- **Self-heating** — a heat equation driven by the TDGL dissipation feeds back
+  through the local temperature, so a hotspot can switch a wire and latch it
+  normal.
+- **Circuit parameters** — kinetic and geometric inductance per unit length and
+  small-signal AC impedance from a TDGL run, a static London solver for the
+  port inductance matrix of 3-D wiring, and a 2-D electrostatic solve for
+  capacitance, giving $Z_0$ and phase velocity.
+- **A service around it** — every capability is described by a versioned
+  project schema and runs as a job behind a FastAPI server, so a UI or an AI
+  assistant drives the same simulations as a script.
+
+## In three dimensions
+
+Three runs where the thickness and the vacuum around the conductor change the
+answer. Each starts as a rendered image; **Explore in 3-D** loads the scene
+itself, which can be rotated, panned and zoomed, and a legend entry clicked to
+hide a layer.
+
+<figure class="tdgl3d" data-title="S/I/S stack in vacuum" data-scenes='[{"label":"Stack","src":"/projects/tdgl/3d/trilayer.json"}]'>
+  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/sis-stack.png"><img src="/projects/tdgl/3d/sis-stack.png" alt="Cut-away S/I/S stack in a perpendicular field, with field lines bending around it and the screening current on the top face" loading="lazy" /></a></div>
+  <div class="tdgl3d-controls" hidden></div>
+  <figcaption>An S/I/S stack — two 3 ξ metal layers around a 1 ξ insulator, 16 ξ square, with 5 ξ of vacuum on every side — in a perpendicular field, cut away so the layers show in section. Field lines are coloured by |B| over the applied field: the metal screens it to 4.7% at the centre, and the expelled flux crowds past the edges at up to 1.36 times the applied field.</figcaption>
+</figure>
+
+<figure class="tdgl3d" data-title="Vortices in a tilted field" data-scenes='[{"label":"Field along the normal","src":"/projects/tdgl/3d/tilted-0.json"},{"label":"Tilted 45°","src":"/projects/tdgl/3d/tilted-45.json"}]'>
+  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/tilted-vortices.png"><img src="/projects/tdgl/3d/tilted-vortices.png" alt="Vortex cores in a 3 ξ film: upright with the field along the normal, leaning with the field tilted 45 degrees" loading="lazy" /></a></div>
+  <div class="tdgl3d-controls" hidden></div>
+  <figcaption>An 18 × 18 × 3 ξ platelet quenched in a field along its normal and tilted 45°. Orange surfaces are the vortex cores (|ψ| = 0.4). With the field tilted, the mean field inside the film leans 47° but the cores lean only 29° ± 5°: the film is thinner than 2λ, so most of the in-plane field passes through as a smooth London field and the cores stay short. A 2-D film cannot show this; its cores are perpendicular by construction.</figcaption>
+</figure>
+
+<figure class="tdgl3d" data-title="Flux flow in a thick strip" data-scenes='[{"label":"Flux flow","src":"/projects/tdgl/3d/flow.json"}]'>
+  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/flux-flow.png"><img src="/projects/tdgl/3d/flux-flow.png" alt="A 3 ξ thick strip carrying current, with vortex tubes crossing it and current streamlines wrapping each core" loading="lazy" /></a></div>
+  <div class="tdgl3d-controls" hidden></div>
+  <figcaption>A 24 × 10 × 3 ξ strip carrying transport current with its own field included, in B<sub>z</sub> = 0.5 H<sub>c2</sub>. About twelve vortex tubes cross it at a time, straight through the thickness to within a grid cell; new ones enter through the far edge pinched at mid-thickness. Streamlines show the current on the mid-plane, coloured by |J|.</figcaption>
+</figure>
 
 ## A 3×3 array of 4 µm holes
 
@@ -107,6 +162,71 @@ by more than a factor of four.
   <figcaption>Supercurrent, normal current and total current around a square hole: J<sub>s</sub> circulates around the hole and vanishes inside it.</figcaption>
 </figure>
 
+## Circuits
+
+### A superconducting bridge rectifier
+
+The vortex diode of
+[Castellani, Medeiros *et al.* (2024)](https://arxiv.org/abs/2406.12175) is a
+wire with a triangular notch on one edge: in a perpendicular field the notch
+lets vortices in more easily for one current direction than the other. tdgl3d
+rebuilds the diode and then the paper's full-wave rectifier — four diodes and a
+normal-metal load — as a single TDGL device.
+
+The diode reproduces the measurement's mechanism: equal critical currents at
+zero field (exact, by symmetry) and an efficiency rising linearly with field.
+The field scale is within a factor of 4–5 of the chip's, and a static thin-film
+London solve of the wire between its contact pads accounts for that factor if the
+wire is short against pads of order 100 µm. In the bridge, nothing reaches the
+load below twice the reverse diodes' critical current. Between that and twice the
+forward one, the load voltage has the same sign for either input polarity: under a
+sine drive the output is full-wave. Its average comes within 2% of the DC transfer
+curve averaged over the same sine.
+
+<figure>
+  <a href="/projects/tdgl/diode-replications.png"><img src="/projects/tdgl/diode-replications.png" alt="Six panels: diode critical currents and efficiency against field, field for 35% efficiency against wire width, the bridge layout, its DC transfer curve and its full-wave AC output" loading="lazy" /></a>
+  <figcaption>Top: the notched diode at three widths against the measured device. Bottom: the four-diode bridge, its DC transfer curve, and the rectified output under a sine drive. Click for full size.</figcaption>
+</figure>
+
+### Self-heating: a hotspot that switches and latches
+
+Moving vortices and normal current dissipate energy. The dissipation density
+$Q = 2|(\partial_t + i\mu)\psi|^2 + 2|E|^2$ drives a heat equation for the reduced
+temperature θ, and θ lowers the local $T_c$ margin $\varepsilon = \varepsilon_0 - \theta$. In
+a strip with a notch, ramping the current 0 → 5 → 0, phase slips at the notch
+heat it past recovery at I ≈ 4.6, and a normal belt spreads across the width,
+sustained by its own Joule heat. On the way down it holds until I ≈ 1.9: the
+self-heating hysteresis of real nanowires. With heating off, the same ramp shows
+only a small phase-slip voltage and never switches.
+
+<figure>
+  <img src="/projects/tdgl/heated-hotspot.gif" alt="Animation of a notched strip under a current ramp: order parameter, dissipation and temperature maps above a voltage–current trace" loading="lazy" />
+  <figcaption>|ψ|, dissipation Q and temperature θ during the ramp, with the voltage against current below. Heated (red) against isothermal (dashed).</figcaption>
+</figure>
+
+### Inductance, impedance and capacitance
+
+A circuit needs its lines' L and C, and three solvers provide them:
+
+- **From TDGL** — inductance per unit length is the stored field plus kinetic
+  energy over $I^2$, and a small sinusoidal drive gives the complex impedance
+  from the Poynting balance on one cross-section. In a field, the vortices add a
+  Campbell-like inductance and dominate the loss at low frequency.
+- **Static London extraction** — the port inductance matrix of 3-D
+  superconducting wiring, with ports as cuts through the conductor, like a
+  junction. It matches Swihart's parallel-plate inductance to 0.39%, and two
+  stacked 10 µm Nb rings come out at 19.9 pH each with k = 0.46.
+- **Electrostatics** — a 2-D Laplace solve gives the capacitance matrix per
+  unit length, matching closed forms for stripline and coplanar waveguide to
+  0.1–0.3% and Hammerstad and Jensen's microstrip to 0.25%. With the TDGL
+  inductance, that gives $Z_0 = \eta_0\sqrt{L/C}$ and the phase velocity, kinetic
+  inductance included.
+
+<figure>
+  <a href="/projects/tdgl/ac-response.png"><img src="/projects/tdgl/ac-response.png" alt="Sheet inductance and sheet resistance of a strip against drive frequency, at zero field and with 8 and 20 vortices" loading="lazy" /></a>
+  <figcaption>Small-signal response of a strip. Vortices raise the low-frequency inductance up to fivefold and the loss by more than an order of magnitude; at zero field the strip follows the two-fluid model.</figcaption>
+</figure>
+
 ## Checks against exact solutions
 
 Two limits of the coupled equations have closed-form solutions, and between them they
@@ -142,27 +262,29 @@ physics requires, and the tolerance allowed.
 
 ## Scale
 
-The device above is 1.8 M nodes at ξ = 100 nm, and it is the size that decides whether
-a study is an afternoon or a month. Measured on 4 cores, per unit of Ginzburg–Landau
-time, with forward Euler at 0.9 of the CFL limit:
+The 3×3 hole array above is 1.8 M nodes at ξ = 100 nm, and it is the size that
+decides whether a study is an afternoon or a month. Measured on 4 cores, per unit of
+Ginzburg–Landau time, with forward Euler at 0.9 of the CFL limit:
 
-| ξ(T) | grid | interior nodes | s per τ<sub>GL</sub> | peak RSS |
+| ξ(T) | grid | interior nodes | s per τ<sub>GL</sub> (double / single) | peak RSS (double / single) |
 |---|---|---|---|---|
-| 150 nm | 240 × 240 × 9 | 457 k | 5.5 | 0.5 GB |
-| 100 nm | 360 × 360 × 15 | 1.80 M | 25.2 | 1.6 GB |
-| 70 nm | 514 × 514 × 21 | 5.26 M | 132 | 4.3 GB |
-| 50 nm | 720 × 720 × 30 | 15.0 M | 475 | 12.1 GB |
+| 150 nm | 240 × 240 × 9 | 457 k | 3.3 / 2.0 | 0.41 / 0.29 GB |
+| 100 nm | 360 × 360 × 15 | 1.80 M | 16 / 9.5 | 1.35 / 0.90 GB |
+| 70 nm | 514 × 514 × 21 | 5.26 M | 70 / 28 | 3.46 / 2.13 GB |
+| 50 nm | 720 × 720 × 30 | 15.0 M | 187 / 106 | 9.58 / 5.73 GB |
 
-All four were run, not extrapolated. Three knobs matter at that scale: a thread pool
-for the right-hand side (bandwidth-bound, so cores help — 3.1× on four), streaming
-frames to HDF5 as they are produced so memory holds one frame however long the run is,
-and single precision, which halves both the memory and the bandwidth the evaluation is
-limited by.
+All eight were run, not extrapolated. Three knobs matter at that scale: a thread
+pool for the right-hand side (bandwidth-bound, so cores help — 2.7× on four),
+streaming frames to HDF5 as they are produced so memory holds one frame however long
+the run is, and single precision, which cuts both the memory and the bandwidth the
+evaluation is limited by.
 
-Use forward Euler. The implicit trapezoidal integrator costs roughly 8× more per unit
-simulated time on a grid this size: its Newton–GCR inner solve is unpreconditioned, so
-the Krylov iteration count grows about as fast as the step size it buys and the larger
-step never pays for itself.
+Where the field evolves, use the IMEX integrator. It takes the stiff
+$\kappa^2\nabla\times\nabla\times\mathbf{A}$ term implicitly, solved exactly by sine and cosine
+transforms, so the step is set by ψ rather than by κ: 11× faster than forward Euler
+at κ = 5 and 170× at κ = 20, agreeing with it to 1e-3 in ψ. Where **A** is frozen,
+forward Euler is the same thing. The implicit trapezoidal integrator is not worth
+it: its unpreconditioned Newton–GCR solve costs more than the larger step buys.
 
 ## Getting started
 
@@ -213,5 +335,7 @@ The Python package is a rewrite of the 3D TDGL MATLAB code written for MIT 6.336
 ## Source
 
 [github.com/omedeiro/nanowire_tdgl](https://github.com/omedeiro/nanowire_tdgl) — the
-Python package. The original MATLAB is in
+Python solver, the project schema and the job server. The original MATLAB is in
 [github.com/omedeiro/simulation6336](https://github.com/omedeiro/simulation6336).
+
+<script src="/projects/tdgl/viewer3d.js" defer></script>

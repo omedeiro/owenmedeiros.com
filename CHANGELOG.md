@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.9.0 — 2026-10-03
+
+### Added
+
+- **Interactive 3-D scenes on `/projects/tdgl-simulation`**: an S/I/S stack screening a perpendicular field, vortex lines in a normal and a 45°-tilted field, and flux flow through a 3 ξ strip. Each is a rendered image until *Explore in 3-D* loads the scene, which can then be rotated, panned and zoomed, with layers toggled from the legend; the tilted-field figure switches between its two field directions. plotly's gl3d bundle is vendored under `public/projects/tdgl/3d/` and fetched only on that click, so reading the page loads nothing new
+- A **Circuits** section on the same page: the notched-wire vortex diode and the four-diode bridge rectifier run as one TDGL device, a self-heating hotspot that switches and latches, and the inductance, AC impedance and capacitance solvers
+
+### Changed
+
+- The TDGL page now opens by describing tdgl3d as what it has become — a fully 3-D superconducting circuit simulator with vortex dynamics, transport current, heating and line-parameter extraction — with a short list of what it simulates, rather than as a solver for vortex dynamics alone
+- The **Scale** table carries the current timings at double and single precision, and the integrator advice now points to IMEX where the field evolves, instead of forward Euler throughout
+- The projects index describes TDGL Simulation as a 3-D superconducting circuit simulator
+
 ## 2.8.4 — 2026-09-17
 
 ### Changed
