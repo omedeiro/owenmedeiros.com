@@ -43,6 +43,14 @@ temperature of interest.
 - **Self-heating** — a heat equation driven by the TDGL dissipation feeds back
   through the local temperature, so a hotspot can switch a wire and latch it
   normal.
+- **Single-photon detection** — an absorbed photon is a hot spot in that heat
+  equation, and the order parameter relaxes at the ratio u of a real
+  superconductor, so detection thresholds and latencies of nanowire detectors
+  come out of the same model.
+- **Heater-switched devices** — resistive heaters, insulators that pass heat
+  but no current, per-material conductivity and thermal properties, and a
+  readout circuit (bias, load, series inductance) at the device's terminals:
+  enough to run a heater nanocryotron (hTron) end to end.
 - **Circuit parameters** — kinetic and geometric inductance per unit length and
   small-signal AC impedance from a TDGL run, a static London solver for the
   port inductance matrix of 3-D wiring, and a 2-D electrostatic solve for
@@ -229,6 +237,75 @@ only a small phase-slip voltage and never switches.
 <figure>
   <img src="/projects/tdgl/heated-hotspot.gif" alt="Animation of a notched strip under a current ramp: order parameter, dissipation and temperature maps above a voltage–current trace" loading="lazy" />
   <figcaption>|ψ|, dissipation Q and temperature θ during the ramp, with the voltage against current below. Heated (red) against isothermal (dashed).</figcaption>
+</figure>
+
+### Single-photon detection
+
+A photon absorbed in a current-carrying strip heats a spot a few ξ across. The
+replication of [Zotova and Vodolazov (2012)](https://arxiv.org/abs/1112.3790)
+runs their NbN strip at T<sub>c</sub>/2: the hot spot heals to |ψ| ≈ 0.3, a
+vortex–antivortex pair nucleates in it about 4 ps after absorption, the pair runs to
+the edges, and the heat it dissipates grows a normal belt that latches under the
+fixed bias. The one threshold the paper states — detection at 0.90 of the depairing
+current for a 52 ξ strip — comes out at 0.921, and 0.930 at half the grid spacing.
+The trends follow: the detection current falls with photon energy, edge absorption
+is easier than central at low energy and harder at high, and the threshold rises
+with width and saturates.
+
+<figure>
+  <a href="/projects/tdgl/photon-detection.png"><img src="/projects/tdgl/photon-detection.png" alt="Detection current against photon energy and against strip width, and four snapshots of a vortex-antivortex pair nucleating in a hot spot" loading="lazy" /></a>
+  <figcaption>(a) Detection current against hot-spot temperature for central and edge absorption, with the paper's stated point. (b) Width dependence. (c) One detection event at 0.94 I<sub>dep</sub>. Click for full size.</figcaption>
+</figure>
+
+The same harness, scaled to a wide WSi strip after
+[Patel *et al.* (JPL)](https://arxiv.org/abs/2609.28897), measures latency against
+where the photon lands. From 0.25 to 4 µm wide at 0.8 I<sub>dep</sub>, the time to a
+detectable voltage grows with width, and in strips 2 µm and wider a photon near the
+edge is detected sooner than one in the centre, as the measurement shows.
+
+<figure>
+  <a href="/projects/tdgl/wide-strip-detection.png"><img src="/projects/tdgl/wide-strip-detection.png" alt="Detection threshold, voltage transients and latency against absorption position for WSi strips 0.25 to 4 µm wide" loading="lazy" /></a>
+  <figcaption>Detection threshold, voltage transients in a 4 µm strip, and latency against strip width for photons absorbed at the centre, halfway and near the edge. Click for full size.</figcaption>
+</figure>
+
+### Heater nanocryotrons
+
+An hTron is a superconducting channel switched by heat from a resistive heater that
+is electrically isolated from it: the heater's Joule heat crosses an insulator,
+lowers the channel's switching current below its bias, and the bias current moves
+into the load. tdgl3d models the heater as a normal-metal region, the insulator as a
+dielectric that passes heat but no current, and puts the channel in a readout
+circuit with a bias, a load resistor and a series inductance.
+
+<figure>
+  <img src="/projects/tdgl/htron-switching.gif" alt="Animation of a planar hTron: a hairpin heater beside a channel heats it, the channel goes normal and the bias current moves into the load, then recovers" loading="lazy" />
+  <figcaption>A planar hTron: a hairpin heater 1.5 ξ from a 32 × 8 ξ channel. During the heater pulse |ψ| collapses in the middle, the channel current falls to 0.60 I<sub>b</sub> and the output rises to 0.40 R<sub>L</sub>I<sub>b</sub>. After the pulse the channel recovers through a stretch of phase slips.</figcaption>
+</figure>
+
+The load decides whether it resets. With R<sub>L</sub> = 10 instead of 3 more of the
+bias stays in the resistive channel (0.82 I<sub>b</sub>), its own Joule heat keeps the
+hot region normal after the heater turns off, and the device latches — the
+electrothermal latching of nanowire switches, set by how the load shares the current.
+
+<figure>
+  <a href="/projects/tdgl/htron-latch-vs-reset.png"><img src="/projects/tdgl/htron-latch-vs-reset.png" alt="Output voltage and channel current for two load resistors under the same heater pulse, with order-parameter maps showing one channel recovered and one latched normal" loading="lazy" /></a>
+  <figcaption>The same heater pulse with two loads: R<sub>L</sub> = 3 resets, R<sub>L</sub> = 10 latches.</figcaption>
+</figure>
+
+Stacked in 3-D — a 1.5 ξ channel, 1 ξ of oxide and a heater line crossing over it —
+the heat crosses the oxide and spreads along the channel, and the channel's switching
+current falls from 3.35 with no heater to 0.25 at a heater current of 6. Against the
+mean temperature under the heater, the first points follow 1 − θ more closely than
+the Ginzburg–Landau depairing law.
+
+<figure>
+  <img src="/projects/tdgl/htron-stack-3d.gif" alt="Animation of a stacked hTron: vertical cut through heater, oxide and channel showing order parameter and temperature, a top view of the channel, and the readout traces" loading="lazy" />
+  <figcaption>The stacked hTron during a heater pulse: |ψ| and θ on a vertical cut through heater, oxide and channel (z stretched), |ψ| in the channel from above, and the readout.</figcaption>
+</figure>
+
+<figure>
+  <a href="/projects/tdgl/htron-switching-current.png"><img src="/projects/tdgl/htron-switching-current.png" alt="Channel switching current against heater current, and normalised against the mean channel temperature under the heater" loading="lazy" /></a>
+  <figcaption>Switching current of the stacked hTron against heater current, and against the local temperature.</figcaption>
 </figure>
 
 ### Inductance, impedance and capacitance
