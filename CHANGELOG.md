@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.10.1 — 2026-10-05
+
+### Fixed
+
+- Stretching import reads a dispatch whose `client_payload` key was left blank (`{"": "..."}`), which is what the Shortcuts body builder sends until the key is typed in. It had been a green run that imported nothing, so a week of sessions never reached `/habits`. A payload with several unrecognised keys now falls through to line parsing instead of being read as an empty window
+
 ## 2.10.0 — 2026-10-03
 
 ### Added

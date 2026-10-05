@@ -224,6 +224,16 @@ def _lines_from_json(decoded: object, source: str, _depth: int = 0) -> list[str]
         for key in ("sessions", "workouts", "data"):
             if key in decoded:
                 return _lines_from_json(decoded[key], source, _depth + 1)
+        if not _pick(decoded, _START_KEYS):
+            # Not a workout either. A one-key dict is still a wrapper: the
+            # Shortcuts body builder leaves a new key blank until it is typed
+            # in, and {"": "..."} once arrived as a green run that imported
+            # nothing. Anything else is a shape we don't know, and None sends
+            # it to the fallback, where its lines fail to parse and the run
+            # goes red instead of passing as a week off.
+            if len(decoded) == 1:
+                return _lines_from_json(next(iter(decoded.values())), source, _depth + 1)
+            return None
         line = _line_from_object(decoded, source)   # a bare object, not a wrapper
         return [line] if line else []
 
