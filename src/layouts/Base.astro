@@ -15,6 +15,7 @@ const nav = [
   { href: "/habits", label: "Habits" },
 ];
 const path = Astro.url.pathname.replace(/\/$/, "") || "/";
+const year = new Date().getFullYear();
 ---
 <!doctype html>
 <html lang="en">
@@ -698,6 +699,7 @@ const path = Astro.url.pathname.replace(/\/$/, "") || "/";
       }
       footer.site a { color: var(--muted); }
       footer.site a:hover { color: var(--fg); }
+      footer.site .copyright { margin: 0.5rem 0 0; }
     </style>
   </head>
   <body>
@@ -722,6 +724,7 @@ const path = Astro.url.pathname.replace(/\/$/, "") || "/";
         <a href="https://linkedin.com/in/owenmedeiros">LinkedIn</a> ·
         <a href="https://scholar.google.com/citations?user=o0Esya8AAAAJ">Google Scholar</a> ·
         <a href="https://orcid.org/0000-0002-8144-8741">ORCID</a>
+        <p class="copyright">© {year} Owen Medeiros. All rights reserved.</p>
       </footer>
     </div>
   </body>

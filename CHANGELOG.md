@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.10.1 — 2026-10-06
+
+### Added
+
+- A copyright line in the site footer, "© <year> Owen Medeiros. All rights reserved.", with the year taken at build time
+- A `LICENSE` file: the site's source code is MIT; its writing, images and data stay all rights reserved; vendored third-party files keep their own licenses
+
 ## 2.10.0 — 2026-10-03
 
 ### Added
