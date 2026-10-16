@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.10.3 — 2026-10-16
+
+### Added
+
+- *Fast-Recovery Epitaxial NbN Superconducting Nanowire Single-Photon Detectors with Saturated Efficiency at 1550 nm in Liquid Helium* (Nano Letters, 2026) to the 2026 publications on `/research`, and to `references.bib`
+
+### Changed
+
+- The Nature Electronics memory-array entry in `references.bib` now carries its final volume, issue and pages (9(1), 69–77) instead of the online-first `1--9`
+
 ## 2.10.2 — 2026-10-16
 
 ### Changed
