@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.10.2 — 2026-10-16
+
+### Changed
+
+- The site icon is now an "OM" monogram (Liberation Serif Bold outlines, off-white on the site's `#1c1c1a`) instead of a photo: `favicon.svg`, a 16/32/48 px `favicon.ico`, and a 180 px `apple-touch-icon.png`, about 20 KB in all
+
+### Removed
+
+- `public/logo.png`, the 1 MB photo that was served as the favicon
+
 ## 2.10.1 — 2026-10-06
 
 ### Added
