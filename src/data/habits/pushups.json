@@ -3,7 +3,7 @@
   "label": "Push-ups",
   "source": "Strava",
   "unit": "reps",
-  "updated_at": "2026-10-16T06:02:39Z",
+  "updated_at": "2026-10-17T06:02:34Z",
   "days": {
     "2026-09-09": {
       "value": 15,
@@ -187,6 +187,12 @@
     },
     "2026-10-15": {
       "value": 26,
+      "extra": {
+        "count": 1
+      }
+    },
+    "2026-10-16": {
+      "value": 21,
       "extra": {
         "count": 1
       }
