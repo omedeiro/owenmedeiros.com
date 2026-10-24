@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.11.0 — 2026-10-24
+
+### Added
+
+- A live 3-D TDGL simulator at `/projects/tdgl/live/nbn-3d.html`: an NbN block on SiO₂/Si at 4.2 K with bias current, field, penetration depth, heat, click-to-absorb photons, current/voltage/temperature traces and a ramped I–V curve, solved on the reader's GPU (WebGL2), about 470 KB, self-contained
+- A "detector block you can run" section on the TDGL page linking it, with a rendered poster
+
 ## 2.10.2 — 2026-10-16
 
 ### Changed

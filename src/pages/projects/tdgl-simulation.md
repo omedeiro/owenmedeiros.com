@@ -268,6 +268,28 @@ edge is detected sooner than one in the centre, as the measurement shows.
   <figcaption>Detection threshold, voltage transients in a 4 µm strip, and latency against strip width for photons absorbed at the centre, halfway and near the edge. Click for full size.</figcaption>
 </figure>
 
+### A detector block you can run
+
+[The live simulator](/projects/tdgl/live/nbn-3d.html) runs the same 3-D scheme in the
+browser, on the reader's GPU: a block of NbN on 20 nm of SiO₂ over silicon at 4.2 K,
+between two gold contacts, with ψ, the vector and scalar potentials, the current's own
+field, and the heat equation in the film and the oxide. Drag to orbit it, set the bias,
+field and penetration depth, and click the film to absorb a photon. Traces show the
+current, voltage and peak temperature, and a ramp mode sweeps the bias to draw the
+I–V curve. The page checks its GPU against a double-precision reference that matches
+tdgl3d to round-off before it runs.
+
+The I–V shows why thick wires latch. The block switches near the depairing current
+straight onto its normal-state line, about 114 Ω across the probes for 39 nm, and then
+its own Joule heat holds it far above T<sub>c</sub>. Heat leaves only through the oxide,
+and a 39 nm block takes about 280 ps to shed it against about 50 ps for a 5 nm film, so
+it stays normal until the current is nearly gone.
+
+<figure>
+  <a href="/projects/tdgl/live/nbn-3d.html"><img src="/projects/tdgl/live-nbn-3d.png" alt="3-D render of an NbN block between two gold contacts on SiO2 and silicon, with a glowing column where a photon was absorbed" loading="lazy" /></a>
+  <figcaption>A photon absorbed in the live simulator: the hot column runs through the film's thickness. Click to open it. It needs WebGL2.</figcaption>
+</figure>
+
 ### Heater nanocryotrons
 
 An hTron is a superconducting channel switched by heat from a resistive heater that
