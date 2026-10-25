@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.13.0 — 2026-10-25
+
+### Changed
+
+- The live simulator shows the TDGL order parameter directly: the film is coloured by |ψ| (the new default) or by the phase of ψ, with a colour key on the view; vortex tubes remain as a third view
+- A more polished look for the live simulator: metallic gold contacts, glassy oxide with edge highlights, bevel glints, a soft shadow and a gradient backdrop
+- The current, voltage and temperature traces now sit right under the 3-D view; the controls use a segmented bias switch and a collapsible "Material and display" group
+- The TDGL page's poster for the simulator shows the new |ψ| view
+
 ## 2.12.0 — 2026-10-25
 
 ### Added
