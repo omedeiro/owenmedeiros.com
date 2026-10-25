@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.11.1 — 2026-10-25
+
+### Changed
+
+- The TDGL page links the live simulator near the top, not only from its section under Circuits
+
 ## 2.11.0 — 2026-10-24
 
 ### Added
