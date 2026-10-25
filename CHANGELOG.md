@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.14.0 — 2026-10-25
+
+### Changed
+
+- The TDGL page is now a short introduction to tdgl3d and to TDGL Lab, its web app at tdgl.owenmedeiros.com (tutorial, live simulator with presets, every gallery example in one format, literature verification, reference), built and deployed from omedeiro/nanowire_tdgl
+- The projects index links TDGL Lab
+
+### Removed
+
+- The TDGL page's inline gallery, 3-D scene viewers and simulator section, and their `.tdgl3d` styles; the files under `public/projects/tdgl/` stay so old links keep working
+
 ## 2.13.2 — 2026-10-25
 
 ### Changed
