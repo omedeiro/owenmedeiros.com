@@ -11,16 +11,16 @@
 /* Layout: one 64rem column; the 3-D view first with its controls beside it on wide screens, below on phones */
 :root {
   --bg: #f2f4f6; --panel: #ffffff; --fg: #141a22; --muted: #5a6573; --rule: #d9dee5;
-  --accent: #2f5bd3; --tube: #12968c; --field: #7b4fd6; --good: #1f8a4c; --warn: #b8740a; --lead: #c9a227; --heat: #e0561b; --ox: #7fb4e6; --si: #7d8590; --beam: #3d8bff;
+  --accent: #2f5bd3; --tube: #12968c; --field: #7b4fd6; --good: #1f8a4c; --warn: #b8740a; --lead: #c9a227; --heat: #e0561b; --ox: #7fb4e6; --si: #7d8590; --beam: #3d8bff; --ax-x: #d9534f; --ax-y: #3fa66a; --ax-z: #4a7fe0;
   --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0f1318; --panel: #171c23; --fg: #e6eaf0; --muted: #96a1ae; --rule: #2a313b;
-  --accent: #7d9bff; --tube: #3fd0c2; --field: #a585ff; --good: #4cc584; --warn: #e3a23c; --lead: #d9b54a; --heat: #ff7a3d; --ox: #3f7fb8; --si: #6b737d; --beam: #6fb0ff; color-scheme: dark } }
+  --accent: #7d9bff; --tube: #3fd0c2; --field: #a585ff; --good: #4cc584; --warn: #e3a23c; --lead: #d9b54a; --heat: #ff7a3d; --ox: #3f7fb8; --si: #6b737d; --beam: #6fb0ff; --ax-x: #f07a74; --ax-y: #5cc98a; --ax-z: #7aa4ff; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0f1318; --panel: #171c23; --fg: #e6eaf0; --muted: #96a1ae; --rule: #2a313b;
-  --accent: #7d9bff; --tube: #3fd0c2; --field: #a585ff; --good: #4cc584; --warn: #e3a23c; --lead: #d9b54a; --heat: #ff7a3d; --ox: #3f7fb8; --si: #6b737d; --beam: #6fb0ff; color-scheme: dark }
+  --accent: #7d9bff; --tube: #3fd0c2; --field: #a585ff; --good: #4cc584; --warn: #e3a23c; --lead: #d9b54a; --heat: #ff7a3d; --ox: #3f7fb8; --si: #6b737d; --beam: #6fb0ff; --ax-x: #f07a74; --ax-y: #5cc98a; --ax-z: #7aa4ff; color-scheme: dark }
 [hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.5; }
 main { max-width: 64rem; margin: 0 auto; padding-block: 28px 48px;
@@ -57,8 +57,8 @@ summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted
 summary::-webkit-details-marker { display: none; }
 summary::before { content: "▸"; display: inline-block; width: 1em; transition: transform .15s; }
 details[open] summary::before { transform: rotate(90deg); }
-.iv { grid-template-columns: minmax(0, 1fr) 16rem; align-items: center; }
-@media (max-width: 760px) { .iv { grid-template-columns: minmax(0, 1fr); } }
+.iv { padding: 12px 14px; gap: 8px; }
+.axes { position: absolute; right: 10px; bottom: 8px; width: 76px; height: 76px; pointer-events: none; }
 .ivplot { display: grid; gap: 6px; min-width: 0; }
 .view { padding: 0; overflow: hidden; position: relative; border-radius: 16px; }
 canvas#view { width: 100%; aspect-ratio: 4 / 3; max-width: 100%; display: block; touch-action: none; cursor: grab; }
@@ -108,6 +108,7 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
     <div class="col">
       <div class="panel view">
         <canvas id="view" aria-label="3-D view of the NbN block on its SiO2 and Si stack"></canvas>
+        <canvas id="axes" class="axes" aria-hidden="true"></canvas>
         <span class="hint" id="hint">Drag to orbit · scroll or pinch to zoom · click the film to absorb a photon</span>
         <div class="vkey" id="ampKey"><span>|ψ|</span><i class="bar amp"></i><span class="ends"><b>0</b><b>1</b></span></div>
         <div class="vkey" id="phKey" hidden><span>phase of ψ</span><i class="bar ph"></i><span class="ends"><b>−π</b><b>π</b></span></div>
@@ -115,6 +116,17 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
       <div class="panel trace">
         <div class="cap"><span><b>Against time</b></span><span class="key2"><i style="background:var(--accent)"></i>I (µA)<i style="background:var(--good)"></i>V (mV)<i style="background:var(--heat)"></i>peak T (K)</span></div>
         <canvas id="cTr" aria-label="Current, voltage and peak film temperature against time"></canvas>
+      </div>
+      <div class="panel iv">
+        <div class="ivplot">
+          <div class="cap"><span><b>I–V curve</b> <span id="ivNote">ramp the bias to draw one</span></span><button id="clearBtn" type="button">Clear</button></div>
+          <canvas id="cIV" aria-label="Current against voltage for the ramped bias"></canvas>
+        </div>
+        <dl class="readouts">
+          <dt>Switching current</dt><dd id="rIsw">–</dd>
+          <dt>Retrapping current</dt><dd id="rIre">–</dd>
+          <dt>Normal-state resistance</dt><dd id="rRn">–</dd>
+        </dl>
       </div>
     </div>
     <div class="panel ctrls">
@@ -167,18 +179,6 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
     </div>
   </div>
   <div id="errBox" class="err" hidden></div>
-
-  <div class="panel iv">
-    <div class="ivplot">
-      <div class="cap"><span><b>I–V curve</b> <span id="ivNote">ramp the bias to draw one</span></span><button id="clearBtn" type="button">Clear</button></div>
-      <canvas id="cIV" aria-label="Current against voltage for the ramped bias"></canvas>
-    </div>
-    <dl class="readouts">
-      <dt>Switching current</dt><dd id="rIsw">–</dd>
-      <dt>Retrapping current</dt><dd id="rIre">–</dd>
-      <dt>Normal-state resistance</dt><dd id="rRn">–</dd>
-    </dl>
-  </div>
 
   <section class="panel notes" aria-labelledby="h-notes">
     <h2 id="h-notes" style="color:var(--fg)">What you are looking at</h2>
@@ -1484,6 +1484,26 @@ function drawIV() {
   ctx.restore();
   $('ivNote').textContent = mode === 'ramp' ? '(blue: |I| rising, amber: falling)' : 'ramp the bias to draw one';
 }
+// a small xyz triad in the corner of the view, turning with the camera
+function drawAxes() {
+  const c = $('axes'), dpr = Math.min(2, window.devicePixelRatio || 1), n = Math.round(76 * dpr);
+  if (c.width !== n) { c.width = n; c.height = n; }
+  const ctx = c.getContext('2d'), cam = view.camera(canvas), o = n / 2, L = n * 0.33;
+  ctx.clearRect(0, 0, n, n);
+  const ax = [['x', [1, 0, 0], css('--ax-x')], ['y', [0, 1, 0], css('--ax-y')], ['z', [0, 0, 1], css('--ax-z')]]
+    .map(([k, v, col]) => ({ k, col, sx: v[0] * cam.rt[0] + v[1] * cam.rt[1] + v[2] * cam.rt[2], sy: v[0] * cam.up[0] + v[1] * cam.up[1] + v[2] * cam.up[2], d: v[0] * cam.fw[0] + v[1] * cam.fw[1] + v[2] * cam.fw[2] }))
+    .sort((a, b) => b.d - a.d); // farthest first
+  ctx.lineCap = 'round'; ctx.font = `600 ${10.5 * dpr}px ${css('--sans') || 'sans-serif'}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = css('--muted'); ctx.beginPath(); ctx.arc(o, o, 1.6 * dpr, 0, 7); ctx.fill();
+  for (const a of ax) {
+    const x = o + a.sx * L, y = o - a.sy * L, al = a.d > 0 ? 0.45 : 1; // axes pointing away are dimmed
+    ctx.globalAlpha = al; ctx.strokeStyle = a.col; ctx.lineWidth = 1.6 * dpr;
+    ctx.beginPath(); ctx.moveTo(o, o); ctx.lineTo(x, y); ctx.stroke();
+    ctx.fillStyle = a.col; ctx.beginPath(); ctx.arc(x, y, 7 * dpr, 0, 7); ctx.fill();
+    ctx.fillStyle = css('--panel'); ctx.fillText(a.k, x, y + 0.5 * dpr);
+  }
+  ctx.globalAlpha = 1;
+}
 function loop() {
   resize();
   sim.B = field();
@@ -1511,7 +1531,7 @@ function loop() {
   if (beamT >= 0) { const a = 1 - (performance.now() - beamT) / 500; view.beam[3] = Math.max(0, a); if (a <= 0) beamT = -1; }
   const t0 = performance.now();
   if (!paused) sim.step(perFrame);
-  view.draw(canvas);
+  view.draw(canvas); drawAxes();
   if (!paused) sim.sync();
   const ms = performance.now() - t0;
   if (!paused) {

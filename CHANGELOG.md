@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.13.2 — 2026-10-25
+
+### Changed
+
+- The live simulator has a small xyz axis triad in the corner of the 3-D view that turns with the camera, and the I–V curve now sits under the time traces, beside the controls
+
 ## 2.13.1 — 2026-10-25
 
 ### Changed
