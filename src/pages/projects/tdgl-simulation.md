@@ -25,6 +25,10 @@ $$
 \frac{\partial \mathbf{A}}{\partial t} = \kappa^2 \nabla \times (\nabla \times \mathbf{A}) - \mathrm{Im}\!\left[\psi^* (\nabla - i\mathbf{A})\psi\right]
 $$
 
+**[Run it live in your browser →](/projects/tdgl/live/nbn-3d.html)** A 3-D NbN
+detector block on SiO₂/Si with bias current, field, heat, photon absorption and a
+ramped I–V curve, solved on your GPU (more [below](#a-detector-block-you-can-run)).
+
 Everything is dimensionless: lengths in coherence lengths ξ, fields in $B_{c2}$.
 Three numbers fix the normalisation — $\Phi_0 = 2\pi$, $\lambda = \kappa$ (in ξ),
 and $H_{c2} = 1$. Devices drawn in SI units are converted with ξ taken at the
