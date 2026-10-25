@@ -278,7 +278,9 @@ edge is detected sooner than one in the centre, as the measurement shows.
 browser, on the reader's GPU: a block of NbN on 20 nm of SiO₂ over silicon at 4.2 K,
 between two gold contacts, with ψ, the vector and scalar potentials, the current's own
 field, and the heat equation in the film and the oxide. Drag to orbit it, set the bias,
-field and penetration depth, and click the film to absorb a photon. Traces show the
+field and penetration depth, and click the film to absorb a photon. The film is
+coloured by the order parameter |ψ| or its phase, so vortices show as dark spots
+or as points where the phase colours wind. Traces show the
 current, voltage and peak temperature, and a ramp mode sweeps the bias to draw the
 I–V curve. The page checks its GPU against a double-precision reference that matches
 tdgl3d to round-off before it runs.
@@ -298,8 +300,8 @@ self-heated normal state, which is the runaway the ramp shows. A switch turns th
 heating off for the isothermal flow of the 2-D demos.
 
 <figure>
-  <a href="/projects/tdgl/live/nbn-3d.html"><img src="/projects/tdgl/live-nbn-3d.png" alt="3-D render of an NbN block between two gold contacts on SiO2 and silicon, with a glowing column where a photon was absorbed" loading="lazy" /></a>
-  <figcaption>A photon absorbed in the live simulator: the hot column runs through the film's thickness. Click to open it. It needs WebGL2.</figcaption>
+  <a href="/projects/tdgl/live/nbn-3d.html"><img src="/projects/tdgl/live-nbn-3d.png" alt="3-D render of an NbN block between two gold contacts on SiO2 and silicon, its top face coloured by the order parameter with dark spots at the vortices" loading="lazy" /></a>
+  <figcaption>The Flux flow preset in the live simulator: the film coloured by |ψ|, with each vortex a dark spot. Click to open it. It needs WebGL2.</figcaption>
 </figure>
 
 ### Heater nanocryotrons
