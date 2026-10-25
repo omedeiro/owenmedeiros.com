@@ -98,7 +98,7 @@ in all: the bottom keeps two more in the film, and the top holds those two in it
 instead.
 
 <figure class="tdgl3d" data-title="Moat grid, field-cooled" data-scenes='[{"label":"Vortex cores","src":"/projects/tdgl/3d/moats.json"}]'>
-  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/moat-grid.png"><img src="/projects/tdgl/3d/moat-grid.png" alt="S/I/S ground plane with a 3×3 grid of moats, vortex cores drawn as orange tubes through both metal layers" loading="lazy" /></a></div>
+  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/moat-grid.png"><img src="/projects/tdgl/3d/moat-grid.png" alt="S/I/S ground plane with a 3×3 grid of moats, vortex cores drawn as teal tubes through both metal layers" loading="lazy" /></a></div>
   <div class="tdgl3d-controls" hidden></div>
   <figcaption>The settled state after 200 τ<sub>GL</sub>. Orange surfaces are the vortex cores, drawn where |ψ| falls below half the vortex-free film at the same depth; blue lines are the field threading the cores and the moats.</figcaption>
 </figure>
@@ -288,6 +288,14 @@ straight onto its normal-state line, about 114 Ω across the probes for 39 nm, a
 its own Joule heat holds it far above T<sub>c</sub>. Heat leaves only through the oxide,
 and a 39 nm block takes about 280 ps to shed it against about 50 ps for a 5 nm film, so
 it stays normal until the current is nearly gone.
+
+Vortices alone do not latch it. The Flux flow preset puts the 20 nm block in
+0.5 H<sub>c2</sub> at a fifth of the depairing current: about ten vortices stream across
+and are replaced as they leave, the flux-flow voltage settles near a tenth of the normal
+value, and the film stays below about 5 K because the oxide carries that small,
+spread-out dissipation away. A little more bias or field and the vortices merge into a
+self-heated normal state, which is the runaway the ramp shows. A switch turns the Joule
+heating off for the isothermal flow of the 2-D demos.
 
 <figure>
   <a href="/projects/tdgl/live/nbn-3d.html"><img src="/projects/tdgl/live-nbn-3d.png" alt="3-D render of an NbN block between two gold contacts on SiO2 and silicon, with a glowing column where a photon was absorbed" loading="lazy" /></a>

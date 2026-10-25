@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.12.0 — 2026-10-25
+
+### Added
+
+- A Flux flow preset in the live simulator (20 nm block, 0.5 Hc2, 0.2 I_dep): about ten vortices stream across without latching, at the real SiO₂ cooling
+- A Joule heating on/off switch in the live simulator, for isothermal flux flow
+
+### Changed
+
+- The live simulator's vortex surface is drawn at a fraction of each layer's bulk |ψ|, so a field no longer paints false sheets along the film faces; one light model for tubes and solids
+- One colour scheme across the 3-D views: vortex cores are teal everywhere (live simulator and the gallery scenes), the field glow is violet, heat stays red to yellow; gallery posters re-rendered
+- A flux-flow paragraph in the TDGL page's live simulator section
+
 ## 2.11.1 — 2026-10-25
 
 ### Changed
