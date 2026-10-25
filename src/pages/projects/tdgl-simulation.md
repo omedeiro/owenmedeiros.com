@@ -281,8 +281,8 @@ field, and the heat equation in the film and the oxide. Drag to orbit it, set th
 field and penetration depth, and click the film to absorb a photon. The film is
 coloured by the order parameter |ψ| or its phase, so vortices show as dark spots
 or as points where the phase colours wind. Traces show the
-current, voltage and peak temperature, and a ramp mode sweeps the bias to draw the
-I–V curve. The page checks its GPU against a double-precision reference that matches
+current, voltage and peak temperature, and a ramp mode sweeps the bias from positive to negative to draw
+the full I–V curve, waiting at zero until the block is cold again. The page checks its GPU against a double-precision reference that matches
 tdgl3d to round-off before it runs.
 
 The I–V shows why thick wires latch. The block switches near the depairing current

@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.13.2 — 2026-10-25
+
+### Changed
+
+- The live simulator has a small xyz axis triad in the corner of the 3-D view that turns with the camera, and the I–V curve now sits under the time traces, beside the controls
+
+## 2.13.1 — 2026-10-25
+
+### Changed
+
+- The live simulator's I–V ramp is a bipolar triangle (0 → +peak → 0 → −peak → 0, repeating) that waits at each zero crossing until the film is below about 4.4 K and superconducting again; the I–V plot covers all four quadrants, the time traces span the whole cycle, and switching and retrapping currents are given for both signs
+
 ## 2.13.0 — 2026-10-25
 
 ### Changed
