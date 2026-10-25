@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="A live 3-D TDGL simulation of an NbN block on SiO2/Si at 4.2 K with bias current, field, heat, photon absorption and a ramped I–V curve, solved on your GPU.">
+<meta name="description" content="A live 3-D TDGL simulation of an NbN block on SiO2/Si at 4.2 K with bias current, field, heat, photon absorption, flux flow and a ramped I–V curve, solved on your GPU.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <title>NbN Block 3-D</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -11,16 +11,16 @@
 /* Layout: one 64rem column; the 3-D view first with its controls beside it on wide screens, below on phones */
 :root {
   --bg: #f2f4f6; --panel: #ffffff; --fg: #141a22; --muted: #5a6573; --rule: #d9dee5;
-  --accent: #2f5bd3; --tube: #c8571f; --field: #3d6df2; --good: #1f8a4c; --warn: #b8740a; --lead: #c9a227; --heat: #e0561b; --ox: #7fb4e6; --si: #7d8590; --beam: #3d8bff;
+  --accent: #2f5bd3; --tube: #12968c; --field: #7b4fd6; --good: #1f8a4c; --warn: #b8740a; --lead: #c9a227; --heat: #e0561b; --ox: #7fb4e6; --si: #7d8590; --beam: #3d8bff;
   --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0f1318; --panel: #171c23; --fg: #e6eaf0; --muted: #96a1ae; --rule: #2a313b;
-  --accent: #7d9bff; --tube: #f08a4b; --field: #6f95ff; --good: #4cc584; --warn: #e3a23c; --lead: #d9b54a; --heat: #ff7a3d; --ox: #3f7fb8; --si: #6b737d; --beam: #6fb0ff; color-scheme: dark } }
+  --accent: #7d9bff; --tube: #3fd0c2; --field: #a585ff; --good: #4cc584; --warn: #e3a23c; --lead: #d9b54a; --heat: #ff7a3d; --ox: #3f7fb8; --si: #6b737d; --beam: #6fb0ff; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0f1318; --panel: #171c23; --fg: #e6eaf0; --muted: #96a1ae; --rule: #2a313b;
-  --accent: #7d9bff; --tube: #f08a4b; --field: #6f95ff; --good: #4cc584; --warn: #e3a23c; --lead: #d9b54a; --heat: #ff7a3d; --ox: #3f7fb8; --si: #6b737d; --beam: #6fb0ff; color-scheme: dark }
+  --accent: #7d9bff; --tube: #3fd0c2; --field: #a585ff; --good: #4cc584; --warn: #e3a23c; --lead: #d9b54a; --heat: #ff7a3d; --ox: #3f7fb8; --si: #6b737d; --beam: #6fb0ff; color-scheme: dark }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.5; }
 main { max-width: 64rem; margin: 0 auto; padding-block: 28px 48px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -73,7 +73,7 @@ canvas#cTr, canvas#cIV { width: 100%; height: 190px; display: block; }
   <header>
     <p class="lead"><a href="/projects/tdgl-simulation" style="color:var(--accent)">← TDGL Simulation</a></p>
     <h1>NbN detector block in 3-D</h1>
-    <p class="lead">A block of NbN on 20 nm of SiO₂ over silicon at 4.2 K, carrying a bias current between two gold contacts, in an applied field. TDGL with screening, the heat equation in the film and the oxide, all solved live on your GPU with tdgl3d's scheme. Drag to orbit, tap or click the top of the film to absorb a photon there. Orange tubes are vortex cores; the red-to-yellow glow is heat (yellow is above T<sub>c</sub>).</p>
+    <p class="lead">A block of NbN on 20 nm of SiO₂ over silicon at 4.2 K, carrying a bias current between two gold contacts, in an applied field. TDGL with screening, the heat equation in the film and the oxide, all solved live on your GPU with tdgl3d's scheme. Drag to orbit, tap or click the top of the film to absorb a photon there. Teal tubes are vortex cores; the red-to-yellow glow is heat (yellow is above T<sub>c</sub>). Press <b>Flux flow</b> for a field-filled block whose vortices stream across without latching.</p>
   </header>
 
   <div class="stage">
@@ -85,6 +85,7 @@ canvas#cTr, canvas#cIV { width: 100%; height: 190px; display: block; }
       <div class="row" role="group" aria-label="Bias mode">
         <button id="holdBtn" type="button" aria-pressed="true">Hold bias</button>
         <button id="rampBtn" type="button" aria-pressed="false">Ramp for an I–V</button>
+        <button id="flowBtn" type="button">Flux flow</button>
       </div>
       <div class="ctl"><label for="cS"><span id="cLab">Bias I / I<sub>dep</sub></span> <b id="cV"></b></label><input id="cS" type="range" min="0" max="1.4" step="0.01" value="0.8"></div>
       <div class="ctl" id="rateBox" hidden><label for="rateS">Sweep rate <b id="rateV"></b></label><input id="rateS" type="range" min="0.25" max="10" step="0.25" value="4"></div>
@@ -100,12 +101,13 @@ canvas#cTr, canvas#cIV { width: 100%; height: 190px; display: block; }
       <div class="ctl"><label for="tS">Field tilt from z <b id="tV"></b></label><input id="tS" type="range" min="0" max="90" step="1" value="0"></div>
       <div class="ctl"><label for="lS">Penetration depth λ <b id="lV"></b></label><input id="lS" type="range" min="0.6" max="3" step="0.05" value="1.5"></div>
       <div class="ctl"><label for="xS">Heat escape to the oxide <b id="xV"></b></label><input id="xS" type="range" min="0" max="4" step="1" value="0"><span class="sub" id="xSub"></span></div>
-      <div class="ctl"><label for="iS">Vortex surface |ψ| = <b id="iV"></b></label><input id="iS" type="range" min="0.15" max="0.85" step="0.01" value="0.4"></div>
+      <div class="ctl"><label for="iS">Vortex surface at |ψ| / bulk = <b id="iV"></b></label><input id="iS" type="range" min="0.2" max="0.8" step="0.01" value="0.5"></div>
       <div class="ctl"><label for="szS">Block (length × width × thickness)</label>
         <select id="szS"><option value="a" selected>236 × 118 × 39 nm</option><option value="b">236 × 118 × 20 nm</option><option value="c">315 × 158 × 39 nm</option></select></div>
       <div class="row">
         <button id="heatBtn" type="button" aria-pressed="true">Heat glow</button>
         <button id="fieldBtn" type="button" aria-pressed="false">Field glow</button>
+        <button id="jouleBtn" type="button" aria-pressed="true">Joule heating</button>
         <button id="resetBtn" type="button">Reset</button>
         <button id="pauseBtn" type="button" aria-pressed="false">Pause</button>
       </div>
@@ -118,7 +120,7 @@ canvas#cTr, canvas#cIV { width: 100%; height: 190px; display: block; }
         <dt>Time</dt><dd id="rT">–</dd>
         <dt>Speed</dt><dd id="rS">–</dd>
       </dl>
-      <div class="key"><span><i style="background:var(--lead)"></i>gold contact</span><span><i style="background:var(--tube)"></i>vortex core</span><span><i style="background:var(--heat)"></i>heat</span><span><i style="background:var(--ox)"></i>SiO₂</span><span><i style="background:var(--si)"></i>Si</span></div>
+      <div class="key"><span><i style="background:var(--lead)"></i>gold contact</span><span><i style="background:var(--tube)"></i>vortex core</span><span><i style="background:var(--heat)"></i>heat</span><span><i style="background:var(--field)"></i>field</span><span><i style="background:var(--ox)"></i>SiO₂</span><span><i style="background:var(--si)"></i>Si</span></div>
     </div>
   </div>
   <div id="errBox" class="err" hidden></div>
@@ -153,6 +155,8 @@ canvas#cTr, canvas#cIV { width: 100%; height: 190px; display: block; }
     </table></div>
     <p>In ramp mode the bias sweeps up and back down in a triangle and the I–V curve is drawn from it, so the trace is a real dynamic sweep, not a set of settled points: a fast sweep overshoots the true switching current. Vortices crossing the block make the first voltage, then the dissipation heats it and it switches to the normal, self-heated branch; on the way down it stays resistive until the heat can leave, so it retraps well below where it switched, or not until the current is gone. That hysteresis is the same mechanism that latches a real detector. Between sweeps the bias rests at zero for 54 ps so the block can cool. The dashed line is the normal-state resistance across the voltage probes: NbN's 900 Ω per square at 5 nm, scaled to the block's thickness. The simulated normal branch lands on it (about 114 Ω for the 39 nm block), which checks the voltage units.</p>
     <p>Why it latches: once the block has switched, it is normal everywhere and its own Joule heat holds it far above T<sub>c</sub>. That heat can only leave downwards, through the film's boundary, 20 nm of SiO₂ and into the silicon, and a thick block stores much more of it per area than a 5 nm wire, so it cools slowly: about 280 ps (1/e) for the 39 nm block and 150 ps for 20 nm, against about 50 ps for a 5 nm film. A sweep of tens of ps cannot retrap it, and even a slow sweep only retraps at a small fraction of the switching current. At zero current it always recovers, which is why the ramp now rests at zero until the block is cold and superconducting again before the next sweep (the state readout says "cooling" meanwhile). The heat-escape slider speeds up both steps of that path to show how a better heat-sunk film retraps higher.</p>
+    <p>Vortices without latching: the <b>Flux flow</b> button puts the 20 nm block in 0.5 H<sub>c2</sub> (1.7 T) along z at a bias of 0.2 I<sub>dep</sub>. The field fills the block with about ten vortices, the bias pushes them across from one edge to the other, and new ones enter as old ones leave, so there is a steady flux-flow voltage of about a tenth of the normal-state value. That dissipation is small and spread out, so the oxide can carry it away: in the CPU reference the film stays below about 5 K for 600 τ with the real SiO₂ cooling. It latches only when the dissipation outruns the cooling. Raise the bias to 0.3 I<sub>dep</sub>, or the field to 0.55 H<sub>c2</sub>, and the vortices merge into a nearly normal, self-heated state. The <b>Joule heating</b> switch turns the heat source off, which gives the isothermal TDGL of the older 2-D demos: vortices flow at any bias and the block never runs away.</p>
+    <p>The vortex surface is drawn where |ψ| drops to the chosen fraction of the bulk |ψ| in each layer, so a field that weakens the whole film does not paint false sheets along its faces.</p>
     <p>What the reference sweep shows (the page's own model run on the CPU, 39 nm block, default sweep): the block stays superconducting up to about the depairing current (only the small L dI/dt voltage shows), switches at about 1.0 I<sub>dep</sub> straight onto the normal line, and heats to well above T<sub>c</sub>. A 39 nm block makes so much Joule heat per area that it stays normal all the way down and only recovers while resting at zero: it latches. The 20 nm block makes half the heat per area and retraps sooner; a real 5 nm detector, less again.</p>
     <p id="checkNote">Checking the GPU solver against the double-precision reference…</p>
   </section>
@@ -977,8 +981,10 @@ out vec4 o;
 uniform vec2 res; uniform vec3 eye, fw, rt, up; uniform float fov, iso, fieldOn, bmag, heatOn, heatK;
 uniform vec3 cBg, cEdge, cTube, cField, cLead, cOx, cSi, cBeam; uniform vec4 beam;
 uniform sampler2D OX;
+uniform float pn[32];   // bulk |psi| of each z-plane: the surface is drawn on (|psi| / bulk)^2, so heat or
+                        // surface suppression that lowers a whole plane does not read as a vortex
 ` + GLSL_GRID + `
-float node(int I, int J, int K){ I = clamp(I, 1, nx); J = clamp(J, 1, ny); K = clamp(K, 1, nz); return length(s0(I, J, K).xy); }
+float node(int I, int J, int K){ I = clamp(I, 1, nx); J = clamp(J, 1, ny); K = clamp(K, 1, nz); vec2 p = s0(I, J, K).xy / pn[K - 1]; return dot(p, p); }
 float amp(vec3 g){
   vec3 b = floor(g), f = g - b; int I = int(b.x), J = int(b.y), K = int(b.z);
   float a = mix(mix(node(I,J,K), node(I+1,J,K), f.x), mix(node(I,J+1,K), node(I+1,J+1,K), f.x), f.y);
@@ -1005,7 +1011,7 @@ vec2 box(vec3 lo, vec3 hi, vec3 rd, out vec3 nrm){
   return vec2(tn, tf); }
 // theta -> glow colour: deep red, orange, then pale yellow past Tc (theta = 1)
 vec3 heatCol(float t){ return mix(mix(vec3(.55, .05, .02), vec3(1., .45, .08), clamp(t * 1.4, 0., 1.)), vec3(1., .93, .6), clamp(t - .9, 0., 1.)); }
-vec3 shade(vec3 c, vec3 n, vec3 rd){ vec3 l = normalize(vec3(.4, .3, .85)); return c * (.45 + .4 * max(dot(n, l), 0.) + .15 * max(dot(n, -rd), 0.)); }
+vec3 shade(vec3 c, vec3 n, vec3 rd){ vec3 l = normalize(vec3(.4, .3, .85)); return c * (.22 + .22 * (.5 + .5 * n.z) + .6 * max(dot(n, l), 0.)); }
 void main(){
   vec2 q = (2. * gl_FragCoord.xy - res) / res.y;
   vec3 rd = normalize(fw + q.x * fov * rt + q.y * fov * up);
@@ -1067,8 +1073,10 @@ void main(){
   if (hit) {
     vec3 g = (eye + rd * th) * toG + off, e = vec3(.5, 0, 0);
     vec3 nrm = normalize(vec3(amp(g + e.xyy) - amp(g - e.xyy), amp(g + e.yxy) - amp(g - e.yxy), amp(g + e.yyx) - amp(g - e.yyx)) + 1e-6);
-    float lam = clamp(dot(nrm, -rd), 0., 1.);
-    back = cTube * (.35 + .65 * lam) + pow(1. - lam, 3.) * .25;
+    // key light from above, a soft sky term and a highlight, the same light as the opaque surfaces
+    vec3 l = normalize(vec3(.4, .3, .85));
+    float dif = max(dot(nrm, l), 0.), sky = .5 + .5 * nrm.z, spe = pow(max(dot(nrm, normalize(l - rd)), 0.), 40.);
+    back = cTube * (.22 + .22 * sky + .6 * dif) + .3 * spe;
   } else if (tO < 1e8) back = shade(cO, nO, rd);
   else back = cBg;
   vec3 col = C + Tr * back;
@@ -1103,7 +1111,7 @@ class RenderHeat3D {
   constructor(sim) {
     this.sim = sim; this.prog = sim.prog(RAY);
     this.yaw = -0.9; this.pitch = 0.5; this.dist = 1.45; this.iso = 0.5; this.field = false; this.heat = true; this.heatK = 1.6;
-    this.beam = [0, 0, 0, 0];
+    this.beam = [0, 0, 0, 0]; this.norm = new Float32Array(32).fill(1);
     this.colors = { bg: [1, 1, 1], edge: [0, 0, 0], tube: [1, .5, .2], field: [.2, .4, 1], lead: [.83, .66, .3], ox: [.8, .88, .95], si: [.5, .53, .58], beam: [.4, .7, 1] };
   }
   camera(canvas) { // eye and the screen basis, kept for picking
@@ -1125,6 +1133,18 @@ class RenderHeat3D {
     if (x < s.h || x > s.nx * s.h || y < s.h || y > s.ny * s.h) return null;
     return { x, y, wx, wy };
   }
+  // per-plane bulk |psi| from a read-back state: the 90th percentile away from the contacts. A plane
+  // with no condensate left (normal, or above Tc) gets a huge value, so it draws no surface at all.
+  setNorm(o, bank) {
+    const { nx, ny, nz } = this.sim, v = [];
+    for (let k = 0; k < nz; k++) {
+      v.length = 0;
+      for (let j = 0; j < ny; j++) for (let i = bank + 2; i < nx - bank - 2; i++) { const a = i + nx * (j + ny * k); v.push(Math.hypot(o.pr[a], o.pi[a])); }
+      v.sort((x, y) => x - y);
+      const p = v[Math.floor(0.9 * (v.length - 1))];
+      this.norm[k] = p > 0.15 ? p : 1e3;
+    }
+  }
   draw(canvas) {
     const s = this.sim, gl = s.gl, p = this.prog;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, canvas.width, canvas.height);
@@ -1133,7 +1153,7 @@ class RenderHeat3D {
     gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, s.oxT[0]); gl.uniform1i(L('OX'), 6);
     gl.uniform2f(L('res'), canvas.width, canvas.height);
     gl.uniform3f(L('eye'), ...c.eye); gl.uniform3f(L('fw'), ...c.fw); gl.uniform3f(L('rt'), ...c.rt); gl.uniform3f(L('up'), ...c.up);
-    gl.uniform1f(L('fov'), c.fov); gl.uniform1f(L('iso'), this.iso); gl.uniform1f(L('fieldOn'), this.field ? 1 : 0);
+    gl.uniform1f(L('fov'), c.fov); gl.uniform1f(L('iso'), this.iso * this.iso); gl.uniform1fv(L('pn'), this.norm); gl.uniform1f(L('fieldOn'), this.field ? 1 : 0);
     gl.uniform1f(L('heatOn'), this.heat ? 1 : 0); gl.uniform1f(L('heatK'), this.heatK);
     gl.uniform1f(L('bmag'), Math.hypot(...s.B)); gl.uniform4f(L('beam'), ...this.beam);
     const k = this.colors;
@@ -1213,20 +1233,21 @@ function voltage() { // mu at x = L/4 minus 3L/4, mid y and z
 }
 
 let sim = null, view = null, paused = false, perFrame = 4, rate = 0, frameN = 0, scale = 0.75;
-let vAvg = 0, hotSince = null, auto = false, nextAuto = 0, beamT = -1;
+let heating = true, vAvg = 0, hotSince = null, auto = false, nextAuto = 0, beamT = -1;
 // bias: 'hold' keeps the slider's value, 'ramp' sweeps it up and down in a triangle
 let mode = 'hold', ramp = { f: 0, dir: 1 }, hist = [], sweep = { up: [], dn: [] }, past = [], isw = null, ire = null;
 const traceTau = () => mode === 'ramp' ? Math.min(8000, 1.15 * (2 * +$('cS').value / (+$('rateS').value / 1000) + DWELL)) : 1200; // window of the traces
 const VTH = 0.12;                  // dimensionless voltage that counts as resistive
 const rnProbe = () => 900 * 5 / thickNm() * (sim.nx / 2) / sim.ny;  // ohms across the probe span: 900 ohm per square at 5 nm, scaled to the thickness
+const FLOW = { B: 0.5, f: 0.2, x: 0, size: 'b' }; // the flux-flow preset, checked on the CPU reference
 const DWELL = 150;                 // shortest rest at zero current between sweeps; the rest lasts until the block has cooled
-let lastTf = 0, psiMean = 1;       // peak film theta and mean |psi| at the last sample
+let lastTf = 0, psiMean = 1, normN = 0;       // peak film theta and mean |psi| at the last sample
 const fracNow = () => mode === 'ramp' ? ramp.f : +$('cS').value;
 function build() {
   if (sim) sim.dispose();
   const key = $('szS').value, [nx, ny, nz] = SIZES[key], kappa = +$('lS').value;
   sim = new GpuHeat3D(gl, { nx, ny, nz, h: H, kappa, dt: dtFor(kappa), B: field(), u: 5.79, q: 0.1, Dth: 0.042, bank: 5, ox: 4, kick: 1e-4 });
-  sim.reset(0.02);
+  sim.reset(0.02); sim.q = heating ? 0.1 : 0;
   sim.setTransport(bmaps(key)); sim.term = 1;
   const keep = view && { yaw: view.yaw, pitch: view.pitch, dist: view.dist, field: view.field, heat: view.heat };
   view = new RenderHeat3D(sim); if (keep) Object.assign(view, keep);
@@ -1248,6 +1269,7 @@ function fire(x, y) { // a photon absorbed at solver coords (x, y)
   view.beam = [x - (sim.nx + 1) * H / 2, y - (sim.ny + 1) * H / 2, 0, 1]; beamT = performance.now();
 }
 function status() {
+  if (++normN % 4 === 1) view.setNorm(sim.read(), 5); // per-plane bulk |psi| for the vortex surface
   const ht = sim.readHeat();
   let tf = 0, to = 0;
   for (const v of ht.theta) tf = Math.max(tf, v);
@@ -1345,10 +1367,10 @@ function drawIV() {
     pts.forEach((p, n) => { const x = X(p[0]), y = Y(p[1]); n ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
     ctx.stroke(); ctx.globalAlpha = 1;
   };
-  for (const s of past) { curve(s.up, css('--accent'), 0.25); curve(s.dn, css('--tube'), 0.25); }
-  curve(sweep.up, css('--accent'), 1); curve(sweep.dn, css('--tube'), 1);
+  for (const s of past) { curve(s.up, css('--accent'), 0.25); curve(s.dn, css('--warn'), 0.25); }
+  curve(sweep.up, css('--accent'), 1); curve(sweep.dn, css('--warn'), 1);
   ctx.restore();
-  $('ivNote').textContent = mode === 'ramp' ? '(blue up, orange down)' : 'ramp the bias to draw one';
+  $('ivNote').textContent = mode === 'ramp' ? '(blue up, amber down)' : 'ramp the bias to draw one';
 }
 function loop() {
   resize();
@@ -1437,6 +1459,15 @@ $('resetBtn').addEventListener('click', () => { sim.reset(0.02); vAvg = 0; hotSi
 $('pauseBtn').addEventListener('click', () => { paused = !paused; $('pauseBtn').setAttribute('aria-pressed', paused); $('pauseBtn').textContent = paused ? 'Resume' : 'Pause'; });
 $('fieldBtn').addEventListener('click', () => { view.field = !view.field; $('fieldBtn').setAttribute('aria-pressed', view.field); });
 $('heatBtn').addEventListener('click', () => { view.heat = !view.heat; $('heatBtn').setAttribute('aria-pressed', view.heat); });
+$('jouleBtn').addEventListener('click', () => { heating = !heating; sim.q = heating ? 0.1 : 0; $('jouleBtn').setAttribute('aria-pressed', heating); });
+// flux flow: a field fills the block with vortices and a modest bias drives them across; the heat sink keeps up, so it never latches
+$('flowBtn').addEventListener('click', () => {
+  setMode('hold');
+  $('bS').value = FLOW.B; $('tS').value = 0; $('cS').value = FLOW.f; $('xS').value = FLOW.x; $('lS').value = 1.5;
+  if ($('szS').value !== FLOW.size) { $('szS').value = FLOW.size; build(); } else { sim.reset(0.02); hist = []; vAvg = 0; hotSince = null; }
+  if (!heating) $('jouleBtn').click();
+  labels();
+});
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeColors); } catch {}
 new MutationObserver(themeColors).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
