@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.13.1 — 2026-10-25
+
+### Changed
+
+- The live simulator's I–V ramp is a bipolar triangle (0 → +peak → 0 → −peak → 0, repeating) that waits at each zero crossing until the film is below about 4.4 K and superconducting again; the I–V plot covers all four quadrants, the time traces span the whole cycle, and switching and retrapping currents are given for both signs
+
 ## 2.13.0 — 2026-10-25
 
 ### Changed

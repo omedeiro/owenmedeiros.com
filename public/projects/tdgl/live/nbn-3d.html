@@ -192,10 +192,11 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
       <tr><td>J<sub>dep</sub></td><td class="n">3.25 MA/cm²</td><td>I<sub>dep</sub> = J<sub>dep</sub> × width × thickness</td></tr>
       <tr><td>Film cooling time into the oxide</td><td class="n">≈ 17 ps</td><td>Zotova and Vodolazov's NbN, PRB 85, 024509</td></tr>
     </table></div>
-    <p>In ramp mode the bias sweeps up and back down in a triangle and the I–V curve is drawn from it, so the trace is a real dynamic sweep, not a set of settled points: a fast sweep overshoots the true switching current. Vortices crossing the block make the first voltage, then the dissipation heats it and it switches to the normal, self-heated branch; on the way down it stays resistive until the heat can leave, so it retraps well below where it switched, or not until the current is gone. That hysteresis is the same mechanism that latches a real detector. Between sweeps the bias rests at zero for 54 ps so the block can cool. The dashed line is the normal-state resistance across the voltage probes: NbN's 900 Ω per square at 5 nm, scaled to the block's thickness. The simulated normal branch lands on it (about 114 Ω for the 39 nm block), which checks the voltage units.</p>
-    <p>Why it latches: once the block has switched, it is normal everywhere and its own Joule heat holds it far above T<sub>c</sub>. That heat can only leave downwards, through the film's boundary, 20 nm of SiO₂ and into the silicon, and a thick block stores much more of it per area than a 5 nm wire, so it cools slowly: about 280 ps (1/e) for the 39 nm block and 150 ps for 20 nm, against about 50 ps for a 5 nm film. A sweep of tens of ps cannot retrap it, and even a slow sweep only retraps at a small fraction of the switching current. At zero current it always recovers, which is why the ramp now rests at zero until the block is cold and superconducting again before the next sweep (the state readout says "cooling" meanwhile). The heat-escape slider speeds up both steps of that path to show how a better heat-sunk film retraps higher.</p>
+    <p>In ramp mode the bias sweeps a bipolar triangle, 0 → +peak → 0 → −peak → 0, over and over, and the I–V curve is drawn from it, so the trace is a real dynamic sweep, not a set of settled points: a fast sweep overshoots the true switching current. Vortices crossing the block make the first voltage, then the dissipation heats it and it switches to the normal, self-heated branch; on the way down it stays resistive until the heat can leave, so it retraps well below where it switched, or not until the current is gone. That hysteresis is the same mechanism that latches a real detector. At each zero crossing the sweep waits until the film is below about 4.4 K and |ψ| has grown back, so each half starts from a cold, superconducting block; the switching and retrapping currents are given for both signs and match by symmetry. The dashed line is the normal-state resistance across the voltage probes: NbN's 900 Ω per square at 5 nm, scaled to the block's thickness. The simulated normal branch lands on it (about 114 Ω for the 39 nm block), which checks the voltage units.</p>
+    <p>Why it latches: once the block has switched, it is normal everywhere and its own Joule heat holds it far above T<sub>c</sub>. That heat can only leave downwards, through the film's boundary, 20 nm of SiO₂ and into the silicon, and a thick block stores much more of it per area than a 5 nm wire, so it cools slowly: about 280 ps (1/e) for the 39 nm block and 150 ps for 20 nm, against about 50 ps for a 5 nm film. A sweep of tens of ps cannot retrap it, and even a slow sweep only retraps at a small fraction of the switching current. At zero current it always recovers, which is why the ramp waits at each zero crossing until the block is cold and superconducting again before sweeping the other way (the state readout says "cooling" meanwhile). The heat-escape slider speeds up both steps of that path to show how a better heat-sunk film retraps higher.</p>
     <p>Vortices without latching: the <b>Flux flow</b> button puts the 20 nm block in 0.5 H<sub>c2</sub> (1.7 T) along z at a bias of 0.2 I<sub>dep</sub>. The field fills the block with about ten vortices, the bias pushes them across from one edge to the other, and new ones enter as old ones leave, so there is a steady flux-flow voltage of about a tenth of the normal-state value. That dissipation is small and spread out, so the oxide can carry it away: in the CPU reference the film stays below about 5 K for 600 τ with the real SiO₂ cooling. It latches only when the dissipation outruns the cooling. Raise the bias to 0.3 I<sub>dep</sub>, or the field to 0.55 H<sub>c2</sub>, and the vortices merge into a nearly normal, self-heated state. The <b>Joule heating</b> switch turns the heat source off, which gives the isothermal TDGL of the older 2-D demos: vortices flow at any bias and the block never runs away.</p>
     <p>The |ψ| and phase maps are painted on the film's faces straight from the solver's nodes. In the phase view each vortex is a point where all the colours meet, and the colours wind once around it. The smooth colour bands between vortices depend on the gauge the solver uses for the field; only the windings are physical. The vortex-tube surface is drawn where |ψ| drops to the chosen fraction of the bulk |ψ| in each layer, so a field that weakens the whole film does not paint false sheets along its faces.</p>
+    <p>The bipolar sweep on the CPU reference (20 nm block, fastest rate, no field): from a fresh block the positive and negative halves are mirror images, switching at 1.07 I<sub>dep</sub> and latching. The positive half reaches zero with the film near 15 K, and the block then waits about 3,100 τ (270 ps) at zero to cool below 4.4 K with |ψ| fully back. The negative half then switches the same way and ends a little hotter (about 16 K), because the oxide still holds a trace of the first half's heat.</p>
     <p>What the reference sweep shows (the page's own model run on the CPU, 39 nm block, default sweep): the block stays superconducting up to about the depairing current (only the small L dI/dt voltage shows), switches at about 1.0 I<sub>dep</sub> straight onto the normal line, and heats to well above T<sub>c</sub>. A 39 nm block makes so much Joule heat per area that it stays normal all the way down and only recovers while resting at zero: it latches. The 20 nm block makes half the heat per area and retraps sooner; a real 5 nm detector, less again.</p>
     <p id="checkNote">Checking the GPU solver against the double-precision reference…</p>
   </section>
@@ -1313,7 +1314,7 @@ function labels() {
     $('xSub').textContent = `block cools in about ${(coolTime(sim.nz) * TAU).toFixed(0)} ps (a 5 nm film: ${(coolTime(1) * TAU).toFixed(0)} ps)`;
   }
   const r = +$('rateS').value / 1000;
-  $('rateV').textContent = `${(2 * +$('cS').value / r * TAU).toFixed(0)} ps per sweep`;
+  $('rateV').textContent = `${(4 * +$('cS').value / r * TAU).toFixed(0)} ps per ± cycle`;
   if (sim) {
     const th = thetaPh();
     $('eSub').textContent = `spot peaks about ${(th * DTK).toFixed(1)} K above the bath${th > 1 ? ', past Tc' : ''}`;
@@ -1332,15 +1333,18 @@ function voltage() { // mu at x = L/4 minus 3L/4, mid y and z
 
 let sim = null, view = null, paused = false, perFrame = 4, rate = 0, frameN = 0, scale = 0.75;
 let heating = true, vAvg = 0, hotSince = null, auto = false, nextAuto = 0, beamT = -1;
-// bias: 'hold' keeps the slider's value, 'ramp' sweeps it up and down in a triangle
-let mode = 'hold', ramp = { f: 0, dir: 1 }, hist = [], sweep = { up: [], dn: [] }, past = [], isw = null, ire = null;
-const traceTau = () => mode === 'ramp' ? Math.min(8000, 1.15 * (2 * +$('cS').value / (+$('rateS').value / 1000) + DWELL)) : 1200; // window of the traces
+// bias: 'hold' keeps the slider's value, 'ramp' sweeps a bipolar triangle 0 -> +peak -> 0 -> -peak -> 0, waiting
+// at each zero crossing until the block is cold and superconducting again
+const newRamp = () => ({ f: 0, dir: 1, sign: 1, t0: sim ? sim.t : 0 }); // t0: when this +/- cycle began
+let mode = 'hold', ramp = newRamp(), hist = [], sweep = { up: [], dn: [], nup: [], ndn: [] }, past = [], isw = { p: null, n: null }, ire = { p: null, n: null };
+const traceTau = () => mode === 'ramp' ? Math.min(40000, Math.max(1.1 * (4 * +$('cS').value / (+$('rateS').value / 1000) + 2 * DWELL), 1.05 * (sim.t - ramp.t0))) : 1200; // window of the traces: the whole current cycle, cooling rests included
 const VTH = 0.12;                  // dimensionless voltage that counts as resistive
 const rnProbe = () => 900 * 5 / thickNm() * (sim.nx / 2) / sim.ny;  // ohms across the probe span: 900 ohm per square at 5 nm, scaled to the thickness
 const FLOW = { B: 0.5, f: 0.2, x: 0, size: 'b' }; // the flux-flow preset, checked on the CPU reference
-const DWELL = 150;                 // shortest rest at zero current between sweeps; the rest lasts until the block has cooled
+const COLD = 0.03;                 // film theta (about 4.4 K) the block must cool below before the sweep crosses zero
+const DWELL = 40;                  // shortest stop at zero current between half-sweeps; it lasts until the block has cooled
 let lastTf = 0, psiMean = 1, normN = 0;       // peak film theta and mean |psi| at the last sample
-const fracNow = () => mode === 'ramp' ? ramp.f : +$('cS').value;
+const fracNow = () => mode === 'ramp' ? ramp.sign * ramp.f : +$('cS').value;
 function build() {
   if (sim) sim.dispose();
   const key = $('szS').value, [nx, ny, nz] = SIZES[key], kappa = +$('lS').value;
@@ -1349,7 +1353,7 @@ function build() {
   sim.setTransport(bmaps(key)); sim.term = 1;
   const keep = view && { yaw: view.yaw, pitch: view.pitch, dist: view.dist, field: view.field, heat: view.heat, skin: view.skin };
   view = new RenderHeat3D(sim); if (keep) Object.assign(view, keep);
-  themeColors(); vAvg = 0; hotSince = null; nextAuto = sim.t + 150; hist = []; ramp = { f: 0, dir: 1 }; clearIV();
+  themeColors(); vAvg = 0; hotSince = null; nextAuto = sim.t + 150; hist = []; ramp = newRamp(); clearIV();
   labels();
 }
 function themeColors() {
@@ -1379,18 +1383,17 @@ function status() {
   const v = voltage(); vAvg = 0.8 * vAvg + 0.2 * v;
   $('rV').textContent = `${(vAvg * V0).toFixed(2)} mV`;
   // one sample for the traces and, in ramp mode, for the I-V
-  const f = fracNow(), s = { t: sim.t, I: f * idepUA(), V: Math.abs(vAvg) * V0, T: TB + DTK * tf };
+  const f = fracNow(), s = { t: sim.t, I: f * idepUA(), V: vAvg * V0, T: TB + DTK * tf }; // signed: + current gives + voltage
   hist.push(s);
   const win = traceTau();
   while (hist.length > 2 && hist[0].t < sim.t - win) hist.shift();
   if (mode === 'ramp') {
-    if (ramp.dir !== 0) (ramp.dir > 0 ? sweep.up : sweep.dn).push([s.V, s.I]);
-    // resistive once V is a fifth of the block's normal-state V at this current (and above the L dI/dt offset)
-    const ohm = s.I * rnProbe() / 1000, resist = s.V > 0.2 * ohm && s.V > 0.15 && f > 0.1;
-    if (ramp.dir > 0 && isw === null && resist) isw = s.I;
-    if (ramp.dir < 0 && isw !== null && ire === null && !resist && f > 0.1) ire = s.I;
-    $('rIsw').textContent = isw === null ? '–' : `${isw.toFixed(0)} µA`;
-    $('rIre').textContent = ire === null ? (isw !== null && ramp.dir === 0 ? 'latched to 0' : '–') : `${ire.toFixed(0)} µA`;
+    if (ramp.dir !== 0) sweep[(ramp.sign > 0 ? '' : 'n') + (ramp.dir > 0 ? 'up' : 'dn')].push([s.V, s.I]); // each sign's half kept apart, so the curves don't join across zero
+    // resistive once |V| is a fifth of the block's normal-state V at this current (and above the L dI/dt offset)
+    const ohm = Math.abs(s.I) * rnProbe() / 1000, av = s.V * ramp.sign, resist = av > 0.2 * ohm && av > 0.15 && ramp.f > 0.1, k = ramp.sign > 0 ? 'p' : 'n';
+    if (ramp.dir > 0 && isw[k] === null && resist) isw[k] = Math.abs(s.I);
+    if (ramp.dir < 0 && isw[k] !== null && ire[k] === null && !resist && ramp.f > 0.1) ire[k] = Math.abs(s.I);
+    showSw();
     if (ramp.dir === 0) { const o = sim.read(); let m = 0; for (let k = 0; k < o.pr.length; k++) m += Math.hypot(o.pr[k], o.pi[k]); psiMean = m / o.pr.length; }
   }
   lastTf = tf;
@@ -1398,12 +1401,18 @@ function status() {
   const res = Math.abs(vAvg) > 0.15;
   if (res) hotSince ??= sim.t; else hotSince = null;
   let tag;
-  if (f < 0.02 && (tf > 0.1 || (mode === 'ramp' && ramp.dir === 0 && psiMean < 0.8))) tag = '<span class="tag t1">cooling, no current</span>';
+  if (Math.abs(f) < 0.02 && (tf > 0.1 || (mode === 'ramp' && ramp.dir === 0 && (tf > COLD || psiMean < 0.8)))) tag = '<span class="tag t1">cooling, no current</span>';
   else if (res && sim.t - hotSince > 150) tag = '<span class="tag t3">resistive, latched</span>';
   else if (tf > 1) tag = '<span class="tag t3">hotspot above Tc</span>';
   else if (res) tag = '<span class="tag t1">switching</span>';
   else tag = '<span class="tag t2">superconducting</span>';
   $('rState').innerHTML = tag;
+}
+function showSw() { // switching and retrapping currents for the + and - halves of the sweep
+  const one = (v, sgn) => v === null ? '–' : `${sgn}${v.toFixed(0)} µA`;
+  const lat = k => isw[k] !== null && ire[k] === null && (ramp.dir === 0 || ramp.sign !== (k === 'p' ? 1 : -1)) ? 'latched' : null;
+  $('rIsw').textContent = isw.p === null && isw.n === null ? '–' : `${one(isw.p, '+')} · ${one(isw.n, '−')}`;
+  $('rIre').textContent = ire.p === null && ire.n === null && !lat('p') && !lat('n') ? '–' : `${lat('p') ?? one(ire.p, '+')} · ${lat('n') ?? one(ire.n, '−')}`;
 }
 function plot(id) { // size a 2-D canvas to its box and return a drawing context
   const c = $(id), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -1420,14 +1429,17 @@ function drawTrace() {
   const h1 = (H - pad.t - pad.b - gap) * 0.56, h2 = (H - pad.t - pad.b - gap) - h1, y2top = pad.t + h1 + gap;
   const win = traceTau(), now = hist.length ? hist[hist.length - 1].t : 0, t0 = Math.max(0, now - win), t1 = Math.max(win, now);
   const X = t => pad.l + (t - t0) / (t1 - t0) * (W - pad.l - pad.r);
-  let vmax = 0.2, tmax = 11; for (const s of hist) { vmax = Math.max(vmax, s.V); tmax = Math.max(tmax, s.T); }
+  let vmax = 0.2, tmax = 11; for (const s of hist) { vmax = Math.max(vmax, Math.abs(s.V)); tmax = Math.max(tmax, s.T); }
   vmax *= 1.15; tmax = Math.max(tmax * 1.02, 11);
-  let imax = Math.max(1, idepUA()); for (const s of hist) imax = Math.max(imax, s.I * 1.05);
-  const YI = v => pad.t + (1 - v / imax) * h1, YV = v => pad.t + (1 - v / vmax) * h1;
+  let imax = Math.max(1, idepUA()); for (const s of hist) imax = Math.max(imax, Math.abs(s.I) * 1.05);
+  const bi = mode === 'ramp', lo = bi ? -1 : 0; // a bipolar sweep puts zero in the middle
+  const YI = v => pad.t + (1 - (v / imax - lo) / (1 - lo)) * h1, YV = v => pad.t + (1 - (v / vmax - lo) / (1 - lo)) * h1;
   const YT = v => y2top + (1 - (v - TB) / (tmax - TB)) * h2;
   const muted = css('--muted'), rule = css('--rule');
   ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.fillStyle = muted;
-  for (const [y, lab, rlab] of [[pad.t, imax.toFixed(0), vmax.toFixed(1)], [pad.t + h1, '0', '0'], [y2top, tmax.toFixed(0) + ' K', ''], [y2top + h2, TB + ' K', '']]) {
+  const rows = [[pad.t, imax.toFixed(0), vmax.toFixed(1)], [YI(0), '0', '0'], [y2top, tmax.toFixed(0) + ' K', ''], [y2top + h2, TB + ' K', '']];
+  if (bi) rows.push([pad.t + h1, '−' + imax.toFixed(0), '−' + vmax.toFixed(1)]);
+  for (const [y, lab, rlab] of rows) {
     ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
     ctx.textAlign = 'right'; ctx.fillText(lab, pad.l - 6 * dpr, y + 4 * dpr);
     if (rlab) { ctx.textAlign = 'left'; ctx.fillText(rlab, W - pad.r + 6 * dpr, y + 4 * dpr); }
@@ -1449,17 +1461,18 @@ function drawTrace() {
 function drawIV() {
   const { ctx, W, H, dpr } = plot('cIV'); if (!W) return;
   const pad = { l: 46 * dpr, r: 10 * dpr, t: 10 * dpr, b: 22 * dpr };
-  const all = [...past.flatMap(s => [...s.up, ...s.dn]), ...sweep.up, ...sweep.dn];
-  let vmax = 0.3, imax = Math.max(1, idepUA()); for (const p of all) { vmax = Math.max(vmax, p[0]); imax = Math.max(imax, p[1] * 1.05); } vmax *= 1.1;
-  const X = v => pad.l + v / vmax * (W - pad.l - pad.r), Y = i => pad.t + (1 - i / imax) * (H - pad.t - pad.b);
+  const all = [...past, sweep].flatMap(s => [...s.up, ...s.dn, ...s.nup, ...s.ndn]);
+  let vmax = 0.3, imax = Math.max(1, idepUA()); for (const p of all) { vmax = Math.max(vmax, Math.abs(p[0])); imax = Math.max(imax, Math.abs(p[1]) * 1.05); } vmax *= 1.1;
+  const X = v => pad.l + (v / vmax + 1) / 2 * (W - pad.l - pad.r), Y = i => pad.t + (1 - i / imax) / 2 * (H - pad.t - pad.b);
   ctx.strokeStyle = css('--rule'); ctx.lineWidth = 1; ctx.fillStyle = css('--muted');
-  for (const i of [0, imax / 2, imax]) { ctx.beginPath(); ctx.moveTo(pad.l, Y(i)); ctx.lineTo(W - pad.r, Y(i)); ctx.stroke(); ctx.textAlign = 'right'; ctx.fillText(i.toFixed(0), pad.l - 6 * dpr, Y(i) + 4 * dpr); }
-  ctx.textAlign = 'center';
-  [0, vmax / 2, vmax].forEach((v, n) => { ctx.textAlign = ['left', 'center', 'right'][n]; ctx.fillText(v.toFixed(1), X(v), H - 6 * dpr); });
-  // the block's normal-state line through the probe span
+  for (const i of [-imax, 0, imax]) { ctx.beginPath(); ctx.moveTo(pad.l, Y(i)); ctx.lineTo(W - pad.r, Y(i)); ctx.stroke(); ctx.textAlign = 'right'; ctx.fillText((i < 0 ? '−' : '') + Math.abs(i).toFixed(0), pad.l - 6 * dpr, Y(i) + 4 * dpr); }
+  ctx.beginPath(); ctx.moveTo(X(0), pad.t); ctx.lineTo(X(0), H - pad.b); ctx.stroke();
+  [-vmax, 0, vmax].forEach((v, n) => { ctx.textAlign = ['left', 'center', 'right'][n]; ctx.fillText((v < 0 ? '−' : '') + Math.abs(v).toFixed(1) + (n === 2 ? ' mV' : ''), X(v), H - 6 * dpr); });
+  ctx.textAlign = 'left'; ctx.fillText('µA', pad.l + 4 * dpr, pad.t + 10 * dpr);
+  // the block's normal-state line through the probe span, both signs
   ctx.save(); ctx.setLineDash([4, 4]); ctx.strokeStyle = css('--muted'); ctx.globalAlpha = 0.7;
   const vn = Math.min(vmax, imax * rnProbe() / 1000);
-  ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(vn), Y(vn * 1000 / rnProbe())); ctx.stroke(); ctx.restore();
+  ctx.beginPath(); ctx.moveTo(X(-vn), Y(-vn * 1000 / rnProbe())); ctx.lineTo(X(vn), Y(vn * 1000 / rnProbe())); ctx.stroke(); ctx.restore();
   ctx.save(); ctx.beginPath(); ctx.rect(pad.l, 0, W - pad.l - pad.r, H); ctx.clip();
   const curve = (pts, col, a) => {
     if (pts.length < 2) return;
@@ -1467,10 +1480,9 @@ function drawIV() {
     pts.forEach((p, n) => { const x = X(p[0]), y = Y(p[1]); n ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
     ctx.stroke(); ctx.globalAlpha = 1;
   };
-  for (const s of past) { curve(s.up, css('--accent'), 0.25); curve(s.dn, css('--warn'), 0.25); }
-  curve(sweep.up, css('--accent'), 1); curve(sweep.dn, css('--warn'), 1);
+  for (const [s, a] of [...past.map(s => [s, 0.25]), [sweep, 1]]) { curve(s.up, css('--accent'), a); curve(s.nup, css('--accent'), a); curve(s.dn, css('--warn'), a); curve(s.ndn, css('--warn'), a); }
   ctx.restore();
-  $('ivNote').textContent = mode === 'ramp' ? '(blue up, amber down)' : 'ramp the bias to draw one';
+  $('ivNote').textContent = mode === 'ramp' ? '(blue: |I| rising, amber: falling)' : 'ramp the bias to draw one';
 }
 function loop() {
   resize();
@@ -1480,7 +1492,11 @@ function loop() {
   if (mode === 'ramp' && !paused) {
     const fmax = +$('cS').value, d = +$('rateS').value / 1000 * perFrame * sim.dt;
     if (ramp.dir === 0) { // resting at zero: start the next sweep, keeping this one behind it
-      if (sim.t >= ramp.until && lastTf < 0.1 && (psiMean > 0.8 || sim.t > ramp.until + 1500)) { /* a field's vortices can hold |psi| lower */ ramp.dir = 1; if (sweep.up.length > 4) { past = [sweep]; sweep = { up: [], dn: [] }; isw = null; ire = null; } }
+      if (sim.t >= ramp.until && lastTf < COLD && (psiMean > 0.8 || sim.t > ramp.until + 1500)) { /* a field's vortices can hold |psi| lower */
+        ramp.dir = 1; ramp.sign = -ramp.sign;
+        if (ramp.sign > 0) ramp.t0 = sim.t;
+        if (ramp.sign > 0 && sweep.up.length > 4) { past = [sweep]; sweep = { up: [], dn: [], nup: [], ndn: [] }; isw = { p: null, n: null }; ire = { p: null, n: null }; showSw(); } // a new cycle
+      }
     } else {
       ramp.f += ramp.dir * d;
       if (ramp.f >= fmax) { ramp.f = fmax; ramp.dir = -1; }
@@ -1543,11 +1559,11 @@ function setMode(m) {
   $('holdBtn').setAttribute('aria-pressed', m === 'hold'); $('rampBtn').setAttribute('aria-pressed', m === 'ramp');
   $('rateBox').hidden = m !== 'ramp';
   $('cLab').innerHTML = m === 'ramp' ? 'Peak of the sweep, I / I<sub>dep</sub>' : 'Bias I / I<sub>dep</sub>';
-  if (m === 'ramp') { ramp = { f: 0, dir: 1 }; clearIV(); if (+$('cS').value < 1.1) $('cS').value = 1.25; }
-  else if (+$('cS').value > 0.95) $('cS').value = 0.8; else { $('rIsw').textContent = '–'; $('rIre').textContent = '–'; }
+  if (m === 'ramp') { ramp = newRamp(); clearIV(); if (+$('cS').value < 1.1) $('cS').value = 1.25; }
+  else if (+$('cS').value > 0.95) $('cS').value = 0.8; else clearIV();
   labels();
 }
-function clearIV() { sweep = { up: [], dn: [] }; past = []; isw = null; ire = null; $('rIsw').textContent = '–'; $('rIre').textContent = '–'; }
+function clearIV() { sweep = { up: [], dn: [], nup: [], ndn: [] }; past = []; isw = { p: null, n: null }; ire = { p: null, n: null }; showSw(); }
 $('holdBtn').addEventListener('click', () => setMode('hold'));
 $('rampBtn').addEventListener('click', () => setMode('ramp'));
 $('clearBtn').addEventListener('click', clearIV);
@@ -1561,7 +1577,7 @@ function setSkin() {
 $('skS').addEventListener('change', setSkin);
 $('fireBtn').addEventListener('click', () => fire((sim.nx + 1) * H / 2, (sim.ny + 1) * H / 2));
 $('autoBtn').addEventListener('click', () => { auto = !auto; $('autoBtn').setAttribute('aria-pressed', auto); nextAuto = sim.t + 50; });
-$('resetBtn').addEventListener('click', () => { sim.reset(0.02); vAvg = 0; hotSince = null; hist = []; if (mode === 'ramp') { ramp = { f: 0, dir: 1 }; clearIV(); } });
+$('resetBtn').addEventListener('click', () => { sim.reset(0.02); vAvg = 0; hotSince = null; hist = []; if (mode === 'ramp') { ramp = newRamp(); clearIV(); } });
 $('pauseBtn').addEventListener('click', () => { paused = !paused; $('pauseBtn').setAttribute('aria-pressed', paused); $('pauseBtn').textContent = paused ? 'Resume' : 'Pause'; });
 $('fieldBtn').addEventListener('click', () => { view.field = !view.field; $('fieldBtn').setAttribute('aria-pressed', view.field); });
 $('heatBtn').addEventListener('click', () => { view.heat = !view.heat; $('heatBtn').setAttribute('aria-pressed', view.heat); });
