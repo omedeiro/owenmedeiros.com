@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.13.3 — 2026-10-26
+
+### Fixed
+
+- The live simulator no longer leaves a blank white 3-D view without explanation: it reports a lost GPU context (and restores it), a frame that did not draw, or a solver that went unstable, naming the GPU; the GPU check line names the GPU too
+- Its |ψ| map tops out at a pale blue instead of white, with stronger face shading, so a vortex-free film still reads as a solid block; the translucent colour key no longer uses `backdrop-filter`, which some browsers mishandle over a WebGL canvas
+
 ## 2.13.2 — 2026-10-25
 
 ### Changed
