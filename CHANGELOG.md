@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.14.0 — 2026-10-25
+## 2.15.0 — 2026-10-27
 
 ### Changed
 
@@ -10,6 +10,45 @@
 ### Removed
 
 - The TDGL page's inline gallery, 3-D scene viewers and simulator section, and their `.tdgl3d` styles; the files under `public/projects/tdgl/` stay so old links keep working
+
+## 2.14.0 — 2026-10-27
+
+### Added
+
+- The live simulator has a **shunt resistor** (default 20 Ω) and a series inductance (default 2 nH): the bias splits between the block and the shunt, so a hotspot pushes its current into the shunt and the block can cool, as in a shunted detector; readouts show both currents, and the notes give the selection rules from the detector literature (shunt small next to the hotspot, L/R longer than the thermal recovery)
+
+### Changed
+
+- Field lines now follow the gallery's S/I/S figure: lines in the mid-plane, coloured by |B| / B_a, with the film's own field from its supercurrent (Biot–Savart, scaled to the solver's curl A inside the film), so they bend around screening and crowd through vortices
+- The 3-D view is sharp again: it grows to 0.75 of the device resolution (was 0.6) as soon as the GPU has headroom, and the ray march is back to its finer step
+## 2.13.5 — 2026-10-27
+
+### Added
+
+- The live simulator has a **Field lines** toggle (off by default): lines of B = curl A traced through the block from the solver's own vector potential and continued along the applied field outside it, with a bolder line through every vortex core
+
+### Changed
+
+- The live simulator starts at a quarter of its resolution and one solver step per frame, and only scales up while timed frames stay quick, so GPUs that time out (seen on Intel Arc under Direct3D 11) get a chance to run; if the GPU still drops the page, the 3-D view names the GPU
+
+### Fixed
+
+- A page whose WebGL context the browser has already taken away now says so, instead of reporting a missing EXT_color_buffer_float
+- The 3-D view's shader no longer indexes a uniform array by plane (Direct3D 11 expands that into a long branch chain inside the ray march) and reads the field glow's links directly, a likely cause of Chrome on Windows dropping the page
+
+## 2.13.4 — 2026-10-27
+
+### Fixed
+
+- The live simulator is lighter on weaker GPUs: it starts at a lower render resolution, takes at most 120 solver steps per frame, uses a shorter ray march, and drops resolution further if frames stay slow; after the GPU stops responding it restarts with half the step budget and a lower resolution, and remembers that on the device
+- When WebGL2 is unavailable, the 3-D view itself says so and shows the browser's own reason and whether WebGL1 works, and gives the Chrome steps to turn it back on (restart, graphics acceleration setting, chrome://gpu)
+
+## 2.13.3 — 2026-10-26
+
+### Fixed
+
+- The live simulator no longer leaves a blank white 3-D view without explanation: it reports a lost GPU context (and restores it), a frame that did not draw, or a solver that went unstable, naming the GPU; the GPU check line names the GPU too
+- Its |ψ| map tops out at a pale blue instead of white, with stronger face shading, so a vortex-free film still reads as a solid block; the translucent colour key no longer uses `backdrop-filter`, which some browsers mishandle over a WebGL canvas
 
 ## 2.13.2 — 2026-10-25
 
