@@ -63,6 +63,8 @@ details[open] summary::before { transform: rotate(90deg); }
 .view { padding: 0; overflow: hidden; position: relative; border-radius: 16px; }
 canvas#view { width: 100%; aspect-ratio: 4 / 3; max-width: 100%; display: block; touch-action: none; cursor: grab; }
 canvas#view:active { cursor: grabbing; }
+.nogl { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 16px 20px; overflow: auto; font-size: 13.5px; line-height: 1.45; color: var(--fg); background: var(--panel, transparent); }
+.nogl b { font-weight: 600; }
 .hint { position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: var(--muted); pointer-events: none; }
 .ctl { display: grid; gap: 4px; }
 .ctl label { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
@@ -109,6 +111,7 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
       <div class="panel view">
         <canvas id="view" aria-label="3-D view of the NbN block on its SiO2 and Si stack"></canvas>
         <canvas id="axes" class="axes" aria-hidden="true"></canvas>
+        <div class="nogl" id="noGl" hidden></div>
         <span class="hint" id="hint">Drag to orbit · scroll or pinch to zoom · click the film to absorb a photon</span>
         <div class="vkey" id="ampKey"><span>|ψ|</span><i class="bar amp"></i><span class="ends"><b>0</b><b>1</b></span></div>
         <div class="vkey" id="phKey" hidden><span>phase of ψ</span><i class="bar ph"></i><span class="ends"><b>−π</b><b>π</b></span></div>
@@ -1118,9 +1121,9 @@ void main(){
   ta = max(ta, 0.); tb = min(tb, tO); if (onSkin) tb = min(tb, max(tF0.x, 0.));
   vec3 C = vec3(0.); float Tr = 1.;
   vec3 toG = vec3(1.) / h, off = (n3 + 1.) * .5;
-  float stp = .4 * h, glowB = 0.;
+  float stp = .5 * h, glowB = 0.;
   bool hit = false; float th = 0.;
-  for (int s = 0; s < 700; s++) {
+  for (int s = 0; s < 480; s++) {
     float t = ta + (float(s) + .5) * stp; if (t > tb || Tr < .02) break;
     vec3 p = eye + rd * t;
     if (p.z < lo.z) { // oxide: a pale translucent layer that glows with its temperature
@@ -1331,7 +1334,10 @@ function voltage() { // mu at x = L/4 minus 3L/4, mid y and z
   return a[0] - b[0];
 }
 
-let sim = null, view = null, paused = false, perFrame = 4, rate = 0, frameN = 0, scale = 0.75;
+let sim = null, view = null, paused = false, perFrame = 4, rate = 0, frameN = 0;
+// GPU load: a lighter start, and a smaller budget after each time the GPU gives up (remembered on this device)
+let lost = 0; try { lost = +localStorage.getItem('nbn3dLost') || 0; } catch {}
+let scale = Math.max(0.35, 0.6 * 0.75 ** lost), maxPF = Math.max(20, Math.round(120 * 0.5 ** lost)), slow = 0;
 let heating = true, vAvg = 0, hotSince = null, auto = false, nextAuto = 0, beamT = -1;
 // bias: 'hold' keeps the slider's value, 'ramp' sweeps a bipolar triangle 0 -> +peak -> 0 -> -peak -> 0, waiting
 // at each zero crossing until the block is cold and superconducting again
@@ -1553,7 +1559,10 @@ function loop() {
   const ms = performance.now() - t0;
   if (!paused) {
     if (ms > 22 && perFrame > 1) perFrame = Math.max(1, Math.floor(perFrame * 0.8));
-    else if (ms < 12 && perFrame < 300) perFrame = Math.ceil(perFrame * 1.15);
+    else if (ms < 12 && perFrame < maxPF) perFrame = Math.min(maxPF, Math.ceil(perFrame * 1.15));
+    // drawing alone too slow: render fewer pixels
+    slow = ms > 40 && perFrame <= 1 ? slow + 1 : 0;
+    if (slow > 20 && scale > 0.35) { scale = Math.max(0.35, scale * 0.8); slow = 0; resize(); }
     rate = 0.9 * rate + 0.1 * (perFrame * sim.dt * 1000 / Math.max(16.7, ms));
   }
   if (++frameN % (mode === 'ramp' ? 3 : 10) === 0 && !paused) { status(); drawTrace(); drawIV(); }
@@ -1627,7 +1636,11 @@ $('flowBtn').addEventListener('click', () => {
   if (!heating) $('jouleBtn').click();
   labels();
 });
-canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); showErr('The browser took the GPU away from this page (WebGL context lost); restoring it…'); });
+canvas.addEventListener('webglcontextlost', e => {
+  e.preventDefault(); lost++; try { localStorage.setItem('nbn3dLost', lost); } catch {}
+  scale = Math.max(0.35, scale * 0.75); maxPF = Math.max(20, Math.round(maxPF * 0.5)); perFrame = Math.min(perFrame, 4);
+  showErr('The GPU stopped responding (WebGL context lost); restarting at a lower resolution and fewer steps per frame…');
+});
 canvas.addEventListener('webglcontextrestored', () => { try { sim = null; build(); setSkin(); $('errBox').hidden = true; } catch (e) { showErr(String(e && e.message || e)); } });
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeColors); } catch {}
 new MutationObserver(themeColors).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
@@ -1644,7 +1657,12 @@ function check() { // GPU against the double-precision reference (matches tdgl3d
   g.dispose(); return e;
 }
 
-if (!gl) { $('errBox').hidden = false; $('errBox').textContent = 'This browser has no WebGL2, so the 3-D solver cannot run here.'; }
+if (!gl) {
+  $('noGl').hidden = false; $('ampKey').hidden = true; $('hint').hidden = true;
+  $('noGl').innerHTML = '<b>WebGL2 is off in this browser, so the 3-D solver cannot run.</b>'
+    + '<span>Chrome supports it, but switches it off when graphics acceleration is off, or for a while after the GPU crashed on a page.</span>'
+    + '<span>1. Quit Chrome completely and reopen it.<br>2. Settings → System → turn on <b>Use graphics acceleration when available</b>, then Relaunch.<br>3. Open <b>chrome://gpu</b>: WebGL2 should say <i>Hardware accelerated</i>.</span>';
+}
 else {
   try {
     build(); setSkin();

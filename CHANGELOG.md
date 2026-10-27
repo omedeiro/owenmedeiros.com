@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.13.4 — 2026-10-27
+
+### Fixed
+
+- The live simulator is lighter on weaker GPUs: it starts at a lower render resolution, takes at most 120 solver steps per frame, uses a shorter ray march, and drops resolution further if frames stay slow; after the GPU stops responding it restarts with half the step budget and a lower resolution, and remembers that on the device
+- When WebGL2 is unavailable, the 3-D view itself says so and gives the Chrome steps to turn it back on (restart, graphics acceleration setting, chrome://gpu)
+
 ## 2.13.3 — 2026-10-26
 
 ### Fixed
