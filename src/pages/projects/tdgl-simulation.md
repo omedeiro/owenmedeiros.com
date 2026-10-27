@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/Md.astro
 title: TDGL Simulation
-description: tdgl3d, a fully 3-D superconducting circuit simulator built on the time-dependent Ginzburg–Landau equations, with vortex dynamics, transport current, self-heating, and inductance and capacitance extraction. Includes interactive 3-D scenes.
+description: tdgl3d, a fully 3-D superconducting circuit simulator built on the time-dependent Ginzburg–Landau equations, and TDGL Lab, its web app with a live simulator, the physics gallery and the checks against the literature.
 ---
 
 tdgl3d is a fully three-dimensional simulator for superconducting devices and
@@ -12,11 +12,6 @@ metal–insulator–metal layers, holes, notches and the vacuum around the condu
 are all on one 3-D grid, so the third dimension is part of the physics rather than
 an extrusion of a 2-D film.
 
-The order parameter ψ and the gauge field live on a structured finite-difference
-grid, with **A** stored as link variables (Peierls phases) on the edges so that
-gauge invariance and flux quantisation hold exactly on the lattice rather than
-approximately.
-
 $$
 \frac{\partial \psi}{\partial t} = (\nabla - i\mathbf{A})^2 \psi + (1 - |\psi|^2)\,\psi
 $$
@@ -25,457 +20,46 @@ $$
 \frac{\partial \mathbf{A}}{\partial t} = \kappa^2 \nabla \times (\nabla \times \mathbf{A}) - \mathrm{Im}\!\left[\psi^* (\nabla - i\mathbf{A})\psi\right]
 $$
 
-**[Run it live in your browser →](/projects/tdgl/live/nbn-3d.html)** A 3-D NbN
-detector block on SiO₂/Si with bias current, field, heat, photon absorption and a
-ramped I–V curve, solved on your GPU (more [below](#a-detector-block-you-can-run)).
-
-Everything is dimensionless: lengths in coherence lengths ξ, fields in $B_{c2}$.
-Three numbers fix the normalisation — $\Phi_0 = 2\pi$, $\lambda = \kappa$ (in ξ),
-and $H_{c2} = 1$. Devices drawn in SI units are converted with ξ taken at the
-temperature of interest.
-
-## What it simulates
-
-- **Vortex dynamics in 3-D** — entry, pinning on holes, lattice formation and flux
-  flow, with vortex lines free to bend and tilt through the thickness.
-- **Heterostructures** — S/I/S stacks, inclusions, etched (vacuum) holes and
-  regions of locally suppressed $T_c$, coupled only through the field.
-- **Transport current** — normal-metal terminals inject current, with the
-  electric potential solved at every step. Either the film is thin and does not
-  screen (pyTDGL's limit), or the current's own magnetic field is carried
-  self-consistently.
-- **Self-heating** — a heat equation driven by the TDGL dissipation feeds back
-  through the local temperature, so a hotspot can switch a wire and latch it
-  normal.
-- **Single-photon detection** — an absorbed photon is a hot spot in that heat
-  equation, and the order parameter relaxes at the ratio u of a real
-  superconductor, so detection thresholds and latencies of nanowire detectors
-  come out of the same model.
-- **Heater-switched devices** — resistive heaters, insulators that pass heat
-  but no current, per-material conductivity and thermal properties, and a
-  readout circuit (bias, load, series inductance) at the device's terminals:
-  enough to run a heater nanocryotron (hTron) end to end.
-- **Circuit parameters** — kinetic and geometric inductance per unit length and
-  small-signal AC impedance from a TDGL run, a static London solver for the
-  port inductance matrix of 3-D wiring, and a 2-D electrostatic solve for
-  capacitance, giving $Z_0$ and phase velocity.
-- **A service around it** — every capability is described by a versioned
-  project schema and runs as a job behind a FastAPI server, so a UI or an AI
-  assistant drives the same simulations as a script.
-
-## In three dimensions
-
-Runs where the thickness and the vacuum around the conductor change the answer. Each starts as a rendered image; **Explore in 3-D** loads the scene
-itself, which can be rotated, panned and zoomed, and a legend entry clicked to
-hide a layer.
-
-<figure class="tdgl3d" data-title="S/I/S stack in vacuum" data-scenes='[{"label":"Stack","src":"/projects/tdgl/3d/trilayer.json"}]'>
-  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/sis-stack.png"><img src="/projects/tdgl/3d/sis-stack.png" alt="Cut-away S/I/S stack in a perpendicular field, with field lines bending around it and the screening current on the top face" loading="lazy" /></a></div>
-  <div class="tdgl3d-controls" hidden></div>
-  <figcaption>An S/I/S stack — two 3 ξ metal layers around a 1 ξ insulator, 16 ξ square, with 5 ξ of vacuum on every side — in a perpendicular field, cut away so the layers show in section. Field lines are coloured by |B| over the applied field: the metal screens it to 4.7% at the centre, and the expelled flux crowds past the edges at up to 1.36 times the applied field.</figcaption>
-</figure>
-
-<figure class="tdgl3d" data-title="Vortices in a tilted field" data-scenes='[{"label":"Field along the normal","src":"/projects/tdgl/3d/tilted-0.json"},{"label":"Tilted 45°","src":"/projects/tdgl/3d/tilted-45.json"}]'>
-  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/tilted-vortices.png"><img src="/projects/tdgl/3d/tilted-vortices.png" alt="Vortex cores in a 3 ξ film: upright with the field along the normal, leaning with the field tilted 45 degrees" loading="lazy" /></a></div>
-  <div class="tdgl3d-controls" hidden></div>
-  <figcaption>An 18 × 18 × 3 ξ platelet quenched in a field along its normal and tilted 45°. Orange surfaces are the vortex cores (|ψ| = 0.4). With the field tilted, the mean field inside the film leans 47° but the cores lean only 29° ± 5°: the film is thinner than 2λ, so most of the in-plane field passes through as a smooth London field and the cores stay short. A 2-D film cannot show this; its cores are perpendicular by construction.</figcaption>
-</figure>
-
-<figure class="tdgl3d" data-title="Flux flow in a thick strip" data-scenes='[{"label":"Flux flow","src":"/projects/tdgl/3d/flow.json"}]'>
-  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/flux-flow.png"><img src="/projects/tdgl/3d/flux-flow.png" alt="A 3 ξ thick strip carrying current, with vortex tubes crossing it and current streamlines wrapping each core" loading="lazy" /></a></div>
-  <div class="tdgl3d-controls" hidden></div>
-  <figcaption>A 24 × 10 × 3 ξ strip carrying transport current with its own field included, in B<sub>z</sub> = 0.5 H<sub>c2</sub>. About twelve vortex tubes cross it at a time, straight through the thickness to within a grid cell; new ones enter through the far edge pinched at mid-thickness. Streamlines show the current on the mid-plane, coloured by |J|.</figcaption>
-</figure>
-
-### A moat grid in a field-cooled S/I/S ground plane
-
-A 36 × 36 ξ ground plane — 3 ξ metal, 1 ξ oxide, 3 ξ metal — with nine 4 ξ moats
-etched through it, cooled through T<sub>c</sub> in B<sub>z</sub> = 0.25 H<sub>c2</sub>,
-about 52 flux quanta over the plane. The two metal layers are coupled only through the
-field and nucleate from independent random starts, yet 16 of the bottom layer's 18 film
-vortices end up stacked on a top-layer vortex within 1.6 ξ. Each layer carries 39 quanta
-in all: the bottom keeps two more in the film, and the top holds those two in its moats
-instead.
-
-<figure class="tdgl3d" data-title="Moat grid, field-cooled" data-scenes='[{"label":"Vortex cores","src":"/projects/tdgl/3d/moats.json"}]'>
-  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/moat-grid.png"><img src="/projects/tdgl/3d/moat-grid.png" alt="S/I/S ground plane with a 3×3 grid of moats, vortex cores drawn as teal tubes through both metal layers" loading="lazy" /></a></div>
-  <div class="tdgl3d-controls" hidden></div>
-  <figcaption>The settled state after 200 τ<sub>GL</sub>. Orange surfaces are the vortex cores, drawn where |ψ| falls below half the vortex-free film at the same depth; blue lines are the field threading the cores and the moats.</figcaption>
-</figure>
-
-<figure class="tdgl3d" data-title="Moat grid, supercurrent" data-scenes='[{"label":"Currents","src":"/projects/tdgl/3d/moats-current.json"}]'>
-  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/moat-grid-current.png"><img src="/projects/tdgl/3d/moat-grid-current.png" alt="Current density and supercurrent streamlines on both metal layers of the moat grid, cut along the middle row of moats" loading="lazy" /></a></div>
-  <div class="tdgl3d-controls" hidden></div>
-  <figcaption>The same state cut along the middle row of moats: the top metal behind the cut, the bottom metal in front with the top layer lifted away, each showing |J| on its mid-plane. Every film vortex carries its own circulating current, peaking about 1 ξ from the core; every moat is ringed by a current sheet along its rim; and the film edge carries the screening current that keeps the remaining flux in.</figcaption>
-</figure>
-
-<figure class="tdgl3d" data-title="Moat grid, field lines" data-scenes='[{"label":"Field lines","src":"/projects/tdgl/3d/moats-field.json"}]'>
-  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/moat-grid-field.png"><img src="/projects/tdgl/3d/moat-grid-field.png" alt="Field lines through the moat grid, coloured by field strength, above a map of Bz on the top metal" loading="lazy" /></a></div>
-  <div class="tdgl3d-controls" hidden></div>
-  <figcaption>Field lines carrying equal flux each, coloured by |B| over the applied field, over B<sub>z</sub> on the top metal's mid-plane. With λ = 2 ξ against a vortex spacing of about 5 ξ the vortex fields overlap, so the field in the stack varies only between 0.74 and 1.21 B<sub>a</sub>. Moats holding three quanta read 1.08–1.12 B<sub>a</sub> at their centres, those holding two 0.99–1.02.</figcaption>
-</figure>
-
-## A 3×3 array of 4 µm holes
-
-The coherence length fixes the grid spacing, but fabrication fixes the device, so a
-real hole array is a large simulation: nine 4 µm holes on an 8 µm pitch with an 8 µm
-buffer is 36 µm across, and at ξ = 150 nm that is 240 × 240 × 9 — 457 k nodes. At
-ξ = 50 nm it is 15 M nodes in 12 GB.
-
-The obvious way to get flux into the holes does not work, and that is the
-interesting part. Ramping the field up, nothing enters until 3.15 mT — and just
-above that, hundreds of vortices enter at once. Held at 3.6 mT, 567 of them pack
-the buffer into a triangular lattice while the array stays fully Meissner-screened
-behind them: the flux front stalls at the array perimeter and never reaches a hole.
-There is no applied field at which this film holds one or two vortices in
-equilibrium; it holds none, or it holds hundreds.
+**[Open TDGL Lab →](https://tdgl.owenmedeiros.com)**
 
 <figure>
-  <a href="/projects/tdgl/nb-hole-array-entry.png"><img src="/projects/tdgl/nb-hole-array-entry.png" alt="Order parameter and Bz maps of a 3×3 hole array with the field ramped to 3.6 mT" loading="lazy" /></a>
-  <figcaption>Field ramped to 3.6 mT. The vortex lattice fills the buffer and stops at the array perimeter; the interior stays screened.</figcaption>
+  <a href="https://tdgl.owenmedeiros.com/#sim"><img src="/projects/tdgl/live-nbn-3d.png" alt="3-D render of an NbN block between two gold contacts on SiO2 and silicon, its top face coloured by the order parameter with dark spots at the vortices" loading="lazy" /></a>
+  <figcaption>The live simulator in TDGL Lab: a 3-D NbN block on SiO₂ over silicon at 4.2 K, with bias current, field, heat and photon absorption, solved on your GPU.</figcaption>
 </figure>
 
-Field-cooling does what the experiment does. ψ grows from near zero with the field
-already on, so flux is trapped where it is rather than having to cross 8 µm of
-screening metal; the field then drops below the entry threshold and the state
-settles. Cooled at 4.0 mT and held at 2.0 mT, after 400 τ<sub>GL</sub>: 3 vortices in
-the metal between the holes, 7 flux quanta trapped across the nine, with the rest of
-the flux in the buffer lattice. An independent run of the same protocol at another
-noise seed gives 2 and 6, with the census flat from t = 293 to t = 400 — so this is a
-settled state, not one realisation of the noise.
-
-<figure>
-  <a href="/projects/tdgl/nb-hole-array-trapped.png"><img src="/projects/tdgl/nb-hole-array-trapped.png" alt="Field-cooled remanent state of the hole array: order parameter and Bz maps" loading="lazy" /></a>
-  <figcaption>Field-cooled at 4 mT, held at 2 mT. The array clears while the holes keep their fluxoid.</figcaption>
-</figure>
-
-<figure>
-  <img src="/projects/tdgl/nb-hole-array-trapped.gif" alt="Animation of vortices entering and settling in the hole array, each hole labelled with its fluxoid" loading="lazy" />
-  <figcaption>Getting there — each hole labelled with the fluxoid it holds.</figcaption>
-</figure>
-
-The holes hold about one quantum each rather than the $B A/\Phi_0 \approx 19$ the
-applied field would suggest, and the $B_z$ map says why: 8 µm of buffer at
-λ = 300 nm leaves the array interior nearly field-free, so there is no local field
-there to support more. Per-hole occupancy is set by how well the surround screens,
-not by the applied field — which makes the buffer width and κ the levers.
-
-A vortex in the film and a fluxoid in a hole are counted differently, because they
-are different things. The first is a core, found from the gauge-invariant phase
-winding around a plaquette; the second has no core to find and is read from the
-winding on a contour drawn in the metal *around* the hole, which is an exact integer
-however little field threads the opening.
-
-## Flux expulsion by an S/I/S ring
-
-A 1 µm hole centred in a 4 µm S/I/S plane with 500 nm layers, at ξ = 100 nm — Nb
-near $T_c$, where Ginzburg–Landau applies. The device expels flux completely — no
-vortices anywhere, zero fluxoid through the hole — up to 9.2 ± 0.3 mT.
-
-What limits it is not the hole. A 4 µm plane is 20 λ across and screens so well that
-only 1.7% of the applied field reaches the hole (0.07 Φ₀ through it at the
-threshold), so the ring is nowhere near its fluxoid limit; vortices penetrate the
-1.5 µm-wide arms first, and the hole does not admit a fluxoid until 10.9 mT. The
-device therefore beats the naive single-loop estimate $\Phi_0/A_\text{hole} = 2.07$ mT
-by more than a factor of four.
-
-<figure>
-  <a href="/projects/tdgl/sis-micron-ring.png"><img src="/projects/tdgl/sis-micron-ring.png" alt="Four-panel figure: vortex and fluxoid counts against applied field, field at the hole centre, and order-parameter maps below and above threshold" loading="lazy" /></a>
-  <figcaption>Vortices enter the plane before the hole gives way. Click for full size.</figcaption>
-</figure>
-
-<figure>
-  <a href="/projects/tdgl/trilayer-bfield.png"><img src="/projects/tdgl/trilayer-bfield.png" alt="Bz cuts through and across an S/I/S stack, and a Bz map of the field around it" loading="lazy" /></a>
-  <figcaption>S/I/S in a perpendicular field — the metal screens, the oxide transmits, and the expelled flux crowds into the vacuum beside the film.</figcaption>
-</figure>
-
-## Nucleation and screening currents
-
-<figure>
-  <img src="/projects/tdgl/vortex-entry-dynamics.gif" alt="Animation of vortex nucleation: order parameter, phase, and a running vortex count" loading="lazy" />
-  <figcaption>Vortices enter from the edges, interact, and settle into a steady population at Bz = 0.5.</figcaption>
-</figure>
-
-<figure>
-  <a href="/projects/tdgl/supercurrent-hole.png"><img src="/projects/tdgl/supercurrent-hole.png" alt="Supercurrent, normal current and total current streamlines around a square hole" loading="lazy" /></a>
-  <figcaption>Supercurrent, normal current and total current around a square hole: J<sub>s</sub> circulates around the hole and vanishes inside it.</figcaption>
-</figure>
-
-## Circuits
-
-### A superconducting bridge rectifier
-
-The vortex diode of
-[Castellani, Medeiros *et al.* (2024)](https://arxiv.org/abs/2406.12175) is a
-wire with a triangular notch on one edge: in a perpendicular field the notch
-lets vortices in more easily for one current direction than the other. tdgl3d
-rebuilds the diode and then the paper's full-wave rectifier — four diodes and a
-normal-metal load — as a single TDGL device.
-
-The diode reproduces the measurement's mechanism: equal critical currents at
-zero field (exact, by symmetry) and an efficiency rising linearly with field.
-The field scale is within a factor of 4–5 of the chip's, and a static thin-film
-London solve of the wire between its contact pads accounts for that factor if the
-wire is short against pads of order 100 µm. In the bridge, nothing reaches the
-load below twice the reverse diodes' critical current. Between that and twice the
-forward one, the load voltage has the same sign for either input polarity: under a
-sine drive the output is full-wave. Its average comes within 2% of the DC transfer
-curve averaged over the same sine.
-
-<figure>
-  <a href="/projects/tdgl/diode-replications.png"><img src="/projects/tdgl/diode-replications.png" alt="Six panels: diode critical currents and efficiency against field, field for 35% efficiency against wire width, the bridge layout, its DC transfer curve and its full-wave AC output" loading="lazy" /></a>
-  <figcaption>Top: the notched diode at three widths against the measured device. Bottom: the four-diode bridge, its DC transfer curve, and the rectified output under a sine drive. Click for full size.</figcaption>
-</figure>
-
-### Self-heating: a hotspot that switches and latches
-
-Moving vortices and normal current dissipate energy. The dissipation density
-$Q = 2|(\partial_t + i\mu)\psi|^2 + 2|E|^2$ drives a heat equation for the reduced
-temperature θ, and θ lowers the local $T_c$ margin $\varepsilon = \varepsilon_0 - \theta$. In
-a strip with a notch, ramping the current 0 → 5 → 0, phase slips at the notch
-heat it past recovery at I ≈ 4.6, and a normal belt spreads across the width,
-sustained by its own Joule heat. On the way down it holds until I ≈ 1.9: the
-self-heating hysteresis of real nanowires. With heating off, the same ramp shows
-only a small phase-slip voltage and never switches.
-
-<figure>
-  <img src="/projects/tdgl/heated-hotspot.gif" alt="Animation of a notched strip under a current ramp: order parameter, dissipation and temperature maps above a voltage–current trace" loading="lazy" />
-  <figcaption>|ψ|, dissipation Q and temperature θ during the ramp, with the voltage against current below. Heated (red) against isothermal (dashed).</figcaption>
-</figure>
-
-### Single-photon detection
-
-A photon absorbed in a current-carrying strip heats a spot a few ξ across. The
-replication of [Zotova and Vodolazov (2012)](https://arxiv.org/abs/1112.3790)
-runs their NbN strip at T<sub>c</sub>/2: the hot spot heals to |ψ| ≈ 0.3, a
-vortex–antivortex pair nucleates in it about 4 ps after absorption, the pair runs to
-the edges, and the heat it dissipates grows a normal belt that latches under the
-fixed bias. The one threshold the paper states — detection at 0.90 of the depairing
-current for a 52 ξ strip — comes out at 0.921, and 0.930 at half the grid spacing.
-The trends follow: the detection current falls with photon energy, edge absorption
-is easier than central at low energy and harder at high, and the threshold rises
-with width and saturates.
-
-<figure>
-  <a href="/projects/tdgl/photon-detection.png"><img src="/projects/tdgl/photon-detection.png" alt="Detection current against photon energy and against strip width, and four snapshots of a vortex-antivortex pair nucleating in a hot spot" loading="lazy" /></a>
-  <figcaption>(a) Detection current against hot-spot temperature for central and edge absorption, with the paper's stated point. (b) Width dependence. (c) One detection event at 0.94 I<sub>dep</sub>. Click for full size.</figcaption>
-</figure>
-
-The same harness, scaled to a wide WSi strip after
-[Patel *et al.* (JPL)](https://arxiv.org/abs/2609.28897), measures latency against
-where the photon lands. From 0.25 to 4 µm wide at 0.8 I<sub>dep</sub>, the time to a
-detectable voltage grows with width, and in strips 2 µm and wider a photon near the
-edge is detected sooner than one in the centre, as the measurement shows.
-
-<figure>
-  <a href="/projects/tdgl/wide-strip-detection.png"><img src="/projects/tdgl/wide-strip-detection.png" alt="Detection threshold, voltage transients and latency against absorption position for WSi strips 0.25 to 4 µm wide" loading="lazy" /></a>
-  <figcaption>Detection threshold, voltage transients in a 4 µm strip, and latency against strip width for photons absorbed at the centre, halfway and near the edge. Click for full size.</figcaption>
-</figure>
-
-### A detector block you can run
-
-[The live simulator](/projects/tdgl/live/nbn-3d.html) runs the same 3-D scheme in the
-browser, on the reader's GPU: a block of NbN on 20 nm of SiO₂ over silicon at 4.2 K,
-between two gold contacts, with ψ, the vector and scalar potentials, the current's own
-field, and the heat equation in the film and the oxide. Drag to orbit it, set the bias,
-field and penetration depth, and click the film to absorb a photon. The film is
-coloured by the order parameter |ψ| or its phase, so vortices show as dark spots
-or as points where the phase colours wind. Traces show the
-current, voltage and peak temperature, and a ramp mode sweeps the bias from positive to negative to draw
-the full I–V curve, waiting at zero until the block is cold again. The page checks its GPU against a double-precision reference that matches
-tdgl3d to round-off before it runs.
-
-The I–V shows why thick wires latch. The block switches near the depairing current
-straight onto its normal-state line, about 114 Ω across the probes for 39 nm, and then
-its own Joule heat holds it far above T<sub>c</sub>. Heat leaves only through the oxide,
-and a 39 nm block takes about 280 ps to shed it against about 50 ps for a 5 nm film, so
-it stays normal until the current is nearly gone.
-
-Vortices alone do not latch it. The Flux flow preset puts the 20 nm block in
-0.5 H<sub>c2</sub> at a fifth of the depairing current: about ten vortices stream across
-and are replaced as they leave, the flux-flow voltage settles near a tenth of the normal
-value, and the film stays below about 5 K because the oxide carries that small,
-spread-out dissipation away. A little more bias or field and the vortices merge into a
-self-heated normal state, which is the runaway the ramp shows. A switch turns the Joule
-heating off for the isothermal flow of the 2-D demos.
-
-<figure>
-  <a href="/projects/tdgl/live/nbn-3d.html"><img src="/projects/tdgl/live-nbn-3d.png" alt="3-D render of an NbN block between two gold contacts on SiO2 and silicon, its top face coloured by the order parameter with dark spots at the vortices" loading="lazy" /></a>
-  <figcaption>The Flux flow preset in the live simulator: the film coloured by |ψ|, with each vortex a dark spot. Click to open it. It needs WebGL2.</figcaption>
-</figure>
-
-### Heater nanocryotrons
-
-An hTron is a superconducting channel switched by heat from a resistive heater that
-is electrically isolated from it: the heater's Joule heat crosses an insulator,
-lowers the channel's switching current below its bias, and the bias current moves
-into the load. tdgl3d models the heater as a normal-metal region, the insulator as a
-dielectric that passes heat but no current, and puts the channel in a readout
-circuit with a bias, a load resistor and a series inductance.
-
-<figure>
-  <img src="/projects/tdgl/htron-switching.gif" alt="Animation of a planar hTron: a hairpin heater beside a channel heats it, the channel goes normal and the bias current moves into the load, then recovers" loading="lazy" />
-  <figcaption>A planar hTron: a hairpin heater 1.5 ξ from a 32 × 8 ξ channel. During the heater pulse |ψ| collapses in the middle, the channel current falls to 0.60 I<sub>b</sub> and the output rises to 0.40 R<sub>L</sub>I<sub>b</sub>. After the pulse the channel recovers through a stretch of phase slips.</figcaption>
-</figure>
-
-The load decides whether it resets. With R<sub>L</sub> = 10 instead of 3 more of the
-bias stays in the resistive channel (0.82 I<sub>b</sub>), its own Joule heat keeps the
-hot region normal after the heater turns off, and the device latches — the
-electrothermal latching of nanowire switches, set by how the load shares the current.
-
-<figure>
-  <a href="/projects/tdgl/htron-latch-vs-reset.png"><img src="/projects/tdgl/htron-latch-vs-reset.png" alt="Output voltage and channel current for two load resistors under the same heater pulse, with order-parameter maps showing one channel recovered and one latched normal" loading="lazy" /></a>
-  <figcaption>The same heater pulse with two loads: R<sub>L</sub> = 3 resets, R<sub>L</sub> = 10 latches.</figcaption>
-</figure>
-
-Stacked in 3-D — a 1.5 ξ channel, 1 ξ of oxide and a heater line crossing over it —
-the heat crosses the oxide and spreads along the channel, and the channel's switching
-current falls from 3.35 with no heater to 0.25 at a heater current of 6. Against the
-mean temperature under the heater, the first points follow 1 − θ more closely than
-the Ginzburg–Landau depairing law.
-
-<figure>
-  <img src="/projects/tdgl/htron-stack-3d.gif" alt="Animation of a stacked hTron: vertical cut through heater, oxide and channel showing order parameter and temperature, a top view of the channel, and the readout traces" loading="lazy" />
-  <figcaption>The stacked hTron during a heater pulse: |ψ| and θ on a vertical cut through heater, oxide and channel (z stretched), |ψ| in the channel from above, and the readout.</figcaption>
-</figure>
-
-<figure>
-  <a href="/projects/tdgl/htron-switching-current.png"><img src="/projects/tdgl/htron-switching-current.png" alt="Channel switching current against heater current, and normalised against the mean channel temperature under the heater" loading="lazy" /></a>
-  <figcaption>Switching current of the stacked hTron against heater current, and against the local temperature.</figcaption>
-</figure>
-
-### Inductance, impedance and capacitance
-
-A circuit needs its lines' L and C, and three solvers provide them:
-
-- **From TDGL** — inductance per unit length is the stored field plus kinetic
-  energy over $I^2$, and a small sinusoidal drive gives the complex impedance
-  from the Poynting balance on one cross-section. In a field, the vortices add a
-  Campbell-like inductance and dominate the loss at low frequency.
-- **Static London extraction** — the port inductance matrix of 3-D
-  superconducting wiring, with ports as cuts through the conductor, like a
-  junction. It matches Swihart's parallel-plate inductance to 0.39%, and two
-  stacked 10 µm Nb rings come out at 19.9 pH each with k = 0.46.
-- **Electrostatics** — a 2-D Laplace solve gives the capacitance matrix per
-  unit length, matching closed forms for stripline and coplanar waveguide to
-  0.1–0.3% and Hammerstad and Jensen's microstrip to 0.25%. With the TDGL
-  inductance, that gives $Z_0 = \eta_0\sqrt{L/C}$ and the phase velocity, kinetic
-  inductance included.
-
-<figure>
-  <a href="/projects/tdgl/ac-response.png"><img src="/projects/tdgl/ac-response.png" alt="Sheet inductance and sheet resistance of a strip against drive frequency, at zero field and with 8 and 20 vortices" loading="lazy" /></a>
-  <figcaption>Small-signal response of a strip. Vortices raise the low-frequency inductance up to fivefold and the loss by more than an order of magnitude; at zero field the strip follows the two-fluid model.</figcaption>
-</figure>
-
-## Checks against exact solutions
-
-Two limits of the coupled equations have closed-form solutions, and between them they
-exercise each equation on its own. Both comparisons have no fitted parameters, and
-both run at three grid spacings so the residual can be shown to be discretisation
-error rather than disagreement.
-
-In the London limit (|ψ| = 1, so the ψ-equation drops out) a square with the field
-pinned on its boundary obeys $\nabla^2 B = B/\lambda^2$, which has an exact Fourier
-solution. The solver matches it to rms 4.1e-3 · B₀ at h = 1 ξ, falling to 3.3e-4 at
-h = 0.25 ξ — observed order 1.82 in h. On the pinned boundary plaquettes, where the
-condition is Dirichlet and the solver should be exact rather than approximate, it
-agrees with the applied field to 6e-16.
-
-At a pair-breaking wall (zero field, so the gauge field drops out)
-$\psi'' = -\psi + \psi^3$ gives $\tanh((x - x_0)/\sqrt{2})$, with the offset $x_0$
-fixed by matching to the insulator's relaxation rather than fitted. The solver
-matches it to rms 5.0e-2 at h = 1 ξ, falling to 4.8e-3 at h = 0.25 ξ — observed
-order 1.69 in h. The √2 is the physics being checked: the Ginzburg–Landau healing
-length is √2 ξ, not ξ.
-
-<figure>
-  <a href="/projects/tdgl/analytic-cross-sections.png"><img src="/projects/tdgl/analytic-cross-sections.png" alt="Six-panel comparison of solver cross-sections against closed-form London and pair-breaking-wall solutions, with residuals at three grid spacings" loading="lazy" /></a>
-  <figcaption>Cross-sections against closed-form solutions, with the residual at three grid spacings. The bottom row applies the same two models to the micron ring, where neither holds exactly, and says where each stops applying. Click for full size.</figcaption>
-</figure>
-
-The 3D path is checked against the same exact solution: a problem with no
-z-dependence must be solved identically by the 2D and 3D codes, and it is — the field
-varies across z-slices by 2e-16 and differs from the 2D run by 2e-10. Altogether the
-verification suites record 294 physics checks — gauge covariance, ∇·B = 0, symmetry,
-fluxoid quantisation, the closed-form limits — each with its measured value, the value
-physics requires, and the tolerance allowed.
-
-## Scale
-
-The 3×3 hole array above is 1.8 M nodes at ξ = 100 nm, and it is the size that
-decides whether a study is an afternoon or a month. Measured on 4 cores, per unit of
-Ginzburg–Landau time, with forward Euler at 0.9 of the CFL limit:
-
-| ξ(T) | grid | interior nodes | s per τ<sub>GL</sub> (double / single) | peak RSS (double / single) |
-|---|---|---|---|---|
-| 150 nm | 240 × 240 × 9 | 457 k | 3.3 / 2.0 | 0.41 / 0.29 GB |
-| 100 nm | 360 × 360 × 15 | 1.80 M | 16 / 9.5 | 1.35 / 0.90 GB |
-| 70 nm | 514 × 514 × 21 | 5.26 M | 70 / 28 | 3.46 / 2.13 GB |
-| 50 nm | 720 × 720 × 30 | 15.0 M | 187 / 106 | 9.58 / 5.73 GB |
-
-All eight were run, not extrapolated. Three knobs matter at that scale: a thread
-pool for the right-hand side (bandwidth-bound, so cores help — 2.7× on four),
-streaming frames to HDF5 as they are produced so memory holds one frame however long
-the run is, and single precision, which cuts both the memory and the bandwidth the
-evaluation is limited by.
-
-Where the field evolves, use the IMEX integrator. It takes the stiff
-$\kappa^2\nabla\times\nabla\times\mathbf{A}$ term implicitly, solved exactly by sine and cosine
-transforms, so the step is set by ψ rather than by κ: 11× faster than forward Euler
-at κ = 5 and 170× at κ = 20, agreeing with it to 1e-3 in ψ. Where **A** is frozen,
-forward Euler is the same thing. The implicit trapezoidal integrator is not worth
-it: its unpreconditioned Newton–GCR solve costs more than the larger step buys.
-
-## Getting started
-
-```bash
-git clone https://github.com/omedeiro/nanowire_tdgl.git
-cd nanowire_tdgl/packages/tdgl3d
-pip install -e ".[dev]"
-pytest
-```
-
-```python
-import tdgl3d
-
-params = tdgl3d.SimulationParameters(
-    Nx=20, Ny=20, Nz=4,
-    hx=1.0, hy=1.0, hz=1.0,
-    kappa=5.0,
-)
-field = tdgl3d.AppliedField(Bz=1.0, ramp=True, ramp_fraction=0.3)
-device = tdgl3d.Device(params, applied_field=field)
-
-solution = tdgl3d.solve(device, t_stop=10.0, dt=0.05, method="euler")
-
-solution.plot_order_parameter(slice_z=2)
-```
-
-The hole-array figures are reproduced by
-[`packages/tdgl3d/examples/nb_hole_array.py`](https://github.com/omedeiro/nanowire_tdgl/blob/main/packages/tdgl3d/examples/nb_hole_array.py),
-whose `--dry-run` prints the grid, the memory per frame and a wall-time estimate
-before you commit to a run. Every figure above is produced by a standalone script in
-[`docs/figures/`](https://github.com/omedeiro/nanowire_tdgl/tree/main/docs/figures).
-
-## MATLAB predecessor
-
-The Python package is a rewrite of the 3D TDGL MATLAB code written for MIT 6.336
-(Spring 2021), verified against it index for index.
-
-<figure>
-  <img src="/projects/tdgl/tdgl-evolution.gif" alt="TDGL order parameter and magnetic field time evolution" style="width: 50%; display: block; margin: 0 auto;" loading="lazy" />
-  <figcaption>Time evolution of a type-II superconductor under a 0.6 mT applied field in the z-direction, turned off at t=65. Top: 2D color map of the order parameter. Bottom: 2D color map of the z-component of the magnetic field.</figcaption>
-</figure>
-
-<figure>
-  <img src="/projects/tdgl/trapGif20211201T151612.gif" alt="Rotating view of the |psi|^2 = 0.1 isosurface in a 3D film" loading="lazy" />
-  <figcaption>The |ψ|² = 0.1 isosurface in a 3D film, from the same MATLAB code.</figcaption>
-</figure>
+## TDGL Lab
+
+TDGL Lab is the project's web app. It has five parts:
+
+- **Tutorial** — ten short chapters from the equations to whole devices: screening,
+  vortex entry, trapped flux, phase slips and flux flow, hotspots, photon detection,
+  diodes and hTrons, and what changes in 3-D. Each one links its examples and a
+  preset to run.
+- **Simulator** — the live 3-D NbN block, with presets for a photon detection, an
+  I–V sweep that switches and latches, flux flow, phase windings and a tilted field.
+  It checks its GPU against a double-precision reference that matches tdgl3d to
+  round-off before it runs.
+- **Examples** — every section of the physics gallery and the replications of
+  published results, each in the same format: figures, animations or a 3-D scene
+  you can rotate, the parameters it ran at, and the test that checks it.
+- **Verification** — the numbers from the literature the model should reproduce,
+  with the value tdgl3d gets and what is still open.
+- **Reference** — units, scale, and how to install and run the Python package.
+
+## A few results
+
+- A photon in a 52 ξ NbN strip is detected at 0.921 of the depairing current,
+  against 0.90 in [Zotova and Vodolazov (2012)](https://arxiv.org/abs/1112.3790).
+- The vortex diode and full-wave bridge rectifier of
+  [Castellani, Medeiros *et al.* (2024)](https://arxiv.org/abs/2406.12175) run as one
+  TDGL device. The mechanism matches; the field scale is within a factor of 4–5 of
+  the chip's.
+- In a field tilted 45° from a 3 ξ film's normal, the mean field inside leans 47°
+  but the vortex cores lean only 29°, which a 2-D film can't show.
 
 ## Source
 
-[github.com/omedeiro/nanowire_tdgl](https://github.com/omedeiro/nanowire_tdgl) — the
-Python solver, the project schema and the job server. The original MATLAB is in
+[github.com/omedeiro/nanowire_tdgl](https://github.com/omedeiro/nanowire_tdgl) holds the
+Python solver, the project schema, the job server and TDGL Lab itself. The original
+MATLAB code, written for MIT 6.336 (Spring 2021), is in
 [github.com/omedeiro/simulation6336](https://github.com/omedeiro/simulation6336).
-
-<script src="/projects/tdgl/viewer3d.js" defer></script>
