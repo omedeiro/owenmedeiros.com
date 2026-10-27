@@ -25,6 +25,10 @@ $$
 \frac{\partial \mathbf{A}}{\partial t} = \kappa^2 \nabla \times (\nabla \times \mathbf{A}) - \mathrm{Im}\!\left[\psi^* (\nabla - i\mathbf{A})\psi\right]
 $$
 
+**[Run it live in your browser →](/projects/tdgl/live/nbn-3d.html)** A 3-D NbN
+detector block on SiO₂/Si with bias current, field, heat, photon absorption and a
+ramped I–V curve, solved on your GPU (more [below](#a-detector-block-you-can-run)).
+
 Everything is dimensionless: lengths in coherence lengths ξ, fields in $B_{c2}$.
 Three numbers fix the normalisation — $\Phi_0 = 2\pi$, $\lambda = \kappa$ (in ξ),
 and $H_{c2} = 1$. Devices drawn in SI units are converted with ξ taken at the
@@ -94,7 +98,7 @@ in all: the bottom keeps two more in the film, and the top holds those two in it
 instead.
 
 <figure class="tdgl3d" data-title="Moat grid, field-cooled" data-scenes='[{"label":"Vortex cores","src":"/projects/tdgl/3d/moats.json"}]'>
-  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/moat-grid.png"><img src="/projects/tdgl/3d/moat-grid.png" alt="S/I/S ground plane with a 3×3 grid of moats, vortex cores drawn as orange tubes through both metal layers" loading="lazy" /></a></div>
+  <div class="tdgl3d-stage"><a href="/projects/tdgl/3d/moat-grid.png"><img src="/projects/tdgl/3d/moat-grid.png" alt="S/I/S ground plane with a 3×3 grid of moats, vortex cores drawn as teal tubes through both metal layers" loading="lazy" /></a></div>
   <div class="tdgl3d-controls" hidden></div>
   <figcaption>The settled state after 200 τ<sub>GL</sub>. Orange surfaces are the vortex cores, drawn where |ψ| falls below half the vortex-free film at the same depth; blue lines are the field threading the cores and the moats.</figcaption>
 </figure>
@@ -266,6 +270,38 @@ edge is detected sooner than one in the centre, as the measurement shows.
 <figure>
   <a href="/projects/tdgl/wide-strip-detection.png"><img src="/projects/tdgl/wide-strip-detection.png" alt="Detection threshold, voltage transients and latency against absorption position for WSi strips 0.25 to 4 µm wide" loading="lazy" /></a>
   <figcaption>Detection threshold, voltage transients in a 4 µm strip, and latency against strip width for photons absorbed at the centre, halfway and near the edge. Click for full size.</figcaption>
+</figure>
+
+### A detector block you can run
+
+[The live simulator](/projects/tdgl/live/nbn-3d.html) runs the same 3-D scheme in the
+browser, on the reader's GPU: a block of NbN on 20 nm of SiO₂ over silicon at 4.2 K,
+between two gold contacts, with ψ, the vector and scalar potentials, the current's own
+field, and the heat equation in the film and the oxide. Drag to orbit it, set the bias,
+field and penetration depth, and click the film to absorb a photon. The film is
+coloured by the order parameter |ψ| or its phase, so vortices show as dark spots
+or as points where the phase colours wind. Traces show the
+current, voltage and peak temperature, and a ramp mode sweeps the bias from positive to negative to draw
+the full I–V curve, waiting at zero until the block is cold again. The page checks its GPU against a double-precision reference that matches
+tdgl3d to round-off before it runs.
+
+The I–V shows why thick wires latch. The block switches near the depairing current
+straight onto its normal-state line, about 114 Ω across the probes for 39 nm, and then
+its own Joule heat holds it far above T<sub>c</sub>. Heat leaves only through the oxide,
+and a 39 nm block takes about 280 ps to shed it against about 50 ps for a 5 nm film, so
+it stays normal until the current is nearly gone.
+
+Vortices alone do not latch it. The Flux flow preset puts the 20 nm block in
+0.5 H<sub>c2</sub> at a fifth of the depairing current: about ten vortices stream across
+and are replaced as they leave, the flux-flow voltage settles near a tenth of the normal
+value, and the film stays below about 5 K because the oxide carries that small,
+spread-out dissipation away. A little more bias or field and the vortices merge into a
+self-heated normal state, which is the runaway the ramp shows. A switch turns the Joule
+heating off for the isothermal flow of the 2-D demos.
+
+<figure>
+  <a href="/projects/tdgl/live/nbn-3d.html"><img src="/projects/tdgl/live-nbn-3d.png" alt="3-D render of an NbN block between two gold contacts on SiO2 and silicon, its top face coloured by the order parameter with dark spots at the vortices" loading="lazy" /></a>
+  <figcaption>The Flux flow preset in the live simulator: the film coloured by |ψ|, with each vortex a dark spot. Click to open it. It needs WebGL2.</figcaption>
 </figure>
 
 ### Heater nanocryotrons

@@ -1,14 +1,58 @@
 # Changelog
 
-## 2.10.3 — 2026-10-16
+## 2.13.3 — 2026-10-26
 
-### Added
+### Fixed
 
-- *Fast-Recovery Epitaxial NbN Superconducting Nanowire Single-Photon Detectors with Saturated Efficiency at 1550 nm in Liquid Helium* (Nano Letters, 2026) to the 2026 publications on `/research`, and to `references.bib`
+- The live simulator no longer leaves a blank white 3-D view without explanation: it reports a lost GPU context (and restores it), a frame that did not draw, or a solver that went unstable, naming the GPU; the GPU check line names the GPU too
+- Its |ψ| map tops out at a pale blue instead of white, with stronger face shading, so a vortex-free film still reads as a solid block; the translucent colour key no longer uses `backdrop-filter`, which some browsers mishandle over a WebGL canvas
+
+## 2.13.2 — 2026-10-25
 
 ### Changed
 
-- The Nature Electronics memory-array entry in `references.bib` now carries its final volume, issue and pages (9(1), 69–77) instead of the online-first `1--9`
+- The live simulator has a small xyz axis triad in the corner of the 3-D view that turns with the camera, and the I–V curve now sits under the time traces, beside the controls
+
+## 2.13.1 — 2026-10-25
+
+### Changed
+
+- The live simulator's I–V ramp is a bipolar triangle (0 → +peak → 0 → −peak → 0, repeating) that waits at each zero crossing until the film is below about 4.4 K and superconducting again; the I–V plot covers all four quadrants, the time traces span the whole cycle, and switching and retrapping currents are given for both signs
+
+## 2.13.0 — 2026-10-25
+
+### Changed
+
+- The live simulator shows the TDGL order parameter directly: the film is coloured by |ψ| (the new default) or by the phase of ψ, with a colour key on the view; vortex tubes remain as a third view
+- A more polished look for the live simulator: metallic gold contacts, glassy oxide with edge highlights, bevel glints, a soft shadow and a gradient backdrop
+- The current, voltage and temperature traces now sit right under the 3-D view; the controls use a segmented bias switch and a collapsible "Material and display" group
+- The TDGL page's poster for the simulator shows the new |ψ| view
+
+## 2.12.0 — 2026-10-25
+
+### Added
+
+- A Flux flow preset in the live simulator (20 nm block, 0.5 Hc2, 0.2 I_dep): about ten vortices stream across without latching, at the real SiO₂ cooling
+- A Joule heating on/off switch in the live simulator, for isothermal flux flow
+
+### Changed
+
+- The live simulator's vortex surface is drawn at a fraction of each layer's bulk |ψ|, so a field no longer paints false sheets along the film faces; one light model for tubes and solids
+- One colour scheme across the 3-D views: vortex cores are teal everywhere (live simulator and the gallery scenes), the field glow is violet, heat stays red to yellow; gallery posters re-rendered
+- A flux-flow paragraph in the TDGL page's live simulator section
+
+## 2.11.1 — 2026-10-25
+
+### Changed
+
+- The TDGL page links the live simulator near the top, not only from its section under Circuits
+
+## 2.11.0 — 2026-10-24
+
+### Added
+
+- A live 3-D TDGL simulator at `/projects/tdgl/live/nbn-3d.html`: an NbN block on SiO₂/Si at 4.2 K with bias current, field, penetration depth, heat, click-to-absorb photons, current/voltage/temperature traces and a ramped I–V curve, solved on the reader's GPU (WebGL2), about 470 KB, self-contained
+- A "detector block you can run" section on the TDGL page linking it, with a rendered poster
 
 ## 2.10.2 — 2026-10-16
 
