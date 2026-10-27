@@ -63,7 +63,7 @@ details[open] summary::before { transform: rotate(90deg); }
 .view { padding: 0; overflow: hidden; position: relative; border-radius: 16px; }
 canvas#view { width: 100%; aspect-ratio: 4 / 3; max-width: 100%; display: block; touch-action: none; cursor: grab; }
 canvas#view:active { cursor: grabbing; }
-.nogl { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 16px 20px; overflow: auto; font-size: 13.5px; line-height: 1.45; color: var(--fg); background: var(--panel, transparent); }
+.nogl { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: safe center; gap: 8px; padding: 16px 20px; overflow: auto; font-size: 13.5px; line-height: 1.45; color: var(--fg); background: var(--panel, transparent); }
 .nogl b { font-weight: 600; }
 .hint { position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: var(--muted); pointer-events: none; }
 .ctl { display: grid; gap: 4px; }
@@ -1271,7 +1271,9 @@ const SIZES = { a: [48, 24, 8], b: [48, 24, 4], c: [64, 32, 8] };
 const PHOTON_R = 0.914, THETA_EV_NM = 24.9; // theta per eV per nm of thickness: 0.55 E / (pi R^2 d C dT)
 const canvas = $('view');
 let gl = null;
-try { gl = canvas.getContext('webgl2', { antialias: false }); } catch { gl = null; }
+let glWhy = '';
+canvas.addEventListener('webglcontextcreationerror', e => { glWhy = e.statusMessage || ''; });
+try { gl = canvas.getContext('webgl2', { antialias: false }); } catch (e) { gl = null; glWhy = glWhy || String(e && e.message || e); }
 
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 function rgb(c) {
@@ -1661,6 +1663,7 @@ if (!gl) {
   $('noGl').hidden = false; $('ampKey').hidden = true; $('hint').hidden = true;
   $('noGl').innerHTML = '<b>WebGL2 is off in this browser, so the 3-D solver cannot run.</b>'
     + '<span>Chrome supports it, but switches it off when graphics acceleration is off, or for a while after the GPU crashed on a page.</span>'
+    + '<span>What the browser reports: <b>' + (glWhy || 'no reason given') + '</b>; WebGL1 on this page: <b>' + (() => { try { return document.createElement('canvas').getContext('webgl') ? 'works' : 'also off'; } catch { return 'also off'; } })() + '</b>.</span>'
     + '<span>1. Quit Chrome completely and reopen it.<br>2. Settings → System → turn on <b>Use graphics acceleration when available</b>, then Relaunch.<br>3. Open <b>chrome://gpu</b>: WebGL2 should say <i>Hardware accelerated</i>.</span>';
 }
 else {
