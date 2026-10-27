@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.14.1 — 2026-10-27
+
+### Changed
+
+- The live simulator's field lines are fully 3-D: the field (applied plus the film's own, by Biot–Savart from its supercurrent) is sampled on a grid around the stack and traced from seeds spread evenly across the applied field upstream of the block, so line density follows the flux, plus a line through each vortex core; drawn in depth order with background-coloured halos so crossings read in depth, wider and stronger when near, faint where the stack hides them, fading at their ends, coloured by |B| / B_a as before
+
 ## 2.14.0 — 2026-10-27
 
 ### Added

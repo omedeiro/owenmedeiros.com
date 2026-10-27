@@ -1554,15 +1554,16 @@ function checkDraw() {
   const err = gl.getError();
   if (err || px[3] === 0) showErr(`The 3-D view did not draw on this GPU (${gpuName()}, ${err ? 'GL error ' + err : 'empty frame'}). Please send this line.`);
 }
-// field lines in the mid-plane (y = W/2), as in the S/I/S gallery figure: the film's supercurrent J (from psi and
-// the link phases, summed over 2x2x2 cells) gives its own field by Biot-Savart, scaled so that inside the film it
-// matches the solver's B = curl A; B = B_a + that field is traced in the x-z plane from a row of seeds below the
-// block and each piece coloured by |B| / B_a. The solver itself holds B = B_a on the film's surface (no stray
-// field), so outside the film this is the field its currents would make in free space.
-const lines = { on: false, paths: [], at: 0 };
+// 3-D field lines. The film's supercurrent J (from psi and the link phases, summed over 2x2x2 cells) gives its
+// own field by Biot-Savart, scaled so that inside the film it matches the solver's B = curl A; B = B_a + that
+// field is sampled on a 3-D grid around the stack and traced (RK2) from seeds spread evenly over a plane
+// across the applied field, upstream of the block, so outside the film the line density follows the flux, plus a
+// line through each vortex core. The solver itself holds B = B_a on the film's surface (no stray field), so
+// outside the film this is the field its currents would make in free space.
+const lines = { on: false, paths: [], at: 0, key: '', segs: [] };
 function traceLines(o) {
   const { nx, ny, nz } = sim, Ba = sim.B, bm = Math.hypot(...Ba);
-  lines.paths = []; if (bm < 1e-3) return;
+  lines.paths = []; lines.key = ''; if (bm < 1e-3) return;
   const at = (I, J, K) => (I - 1) + nx * ((J - 1) + ny * (K - 1));
   // supercurrent on each link: Im(conj psi_I psi_I+1 e^{-i phi})
   const jl = (a, b, ph) => { const c = Math.cos(ph), sn = Math.sin(ph), xr = o.pr[b] * c + o.pi[b] * sn, xi = o.pi[b] * c - o.pr[b] * sn; return o.pr[a] * xi - o.pi[a] * xr; };
@@ -1579,11 +1580,10 @@ function traceLines(o) {
     }
     src.push(cx / m, cy / m, cz / m, jx, jy, jz);
   }
-  const eps2 = 1.0;
-  const bs = (x, y, z, out) => { // Biot-Savart of the cells, in node units
+  const bs = (x, y, z, out) => { // Biot-Savart of the cells, in node units, softened over one node
     let bx = 0, by = 0, bz = 0;
     for (let q = 0; q < src.length; q += 6) {
-      const rx = x - src[q], ry = y - src[q + 1], rz = z - src[q + 2], r2 = rx * rx + ry * ry + rz * rz + eps2, w = 1 / (r2 * Math.sqrt(r2));
+      const rx = x - src[q], ry = y - src[q + 1], rz = z - src[q + 2], r2 = rx * rx + ry * ry + rz * rz + 1, w = 1 / (r2 * Math.sqrt(r2));
       const jx = src[q + 3], jy = src[q + 4], jz = src[q + 5];
       bx += (jy * rz - jz * ry) * w; by += (jz * rx - jx * rz) * w; bz += (jx * ry - jy * rx) * w;
     }
@@ -1596,29 +1596,57 @@ function traceLines(o) {
     bs(I + .5, J + .5, K, t); num += (bz - Ba[2]) * t[2]; den += t[2] * t[2];
   }
   const c = den > 0 ? num / den : 0;
-  // the x-z grid at mid y, reaching a third of the length past each end and as far above and below
-  const ext = 0.35 * nx, x0 = 1 - ext, x1 = nx + ext, zc = (nz + 1) / 2, z0 = zc - 0.55 * (x1 - x0) * 0.45, z1 = zc + 0.55 * (x1 - x0) * 0.45;
-  const GX = 72, GZ = Math.round(GX * (z1 - z0) / (x1 - x0)), yc = (ny + 1) / 2, G = new Float32Array(2 * GX * GZ);
-  for (let b = 0; b < GZ; b++) for (let a = 0; a < GX; a++) {
-    bs(x0 + (x1 - x0) * a / (GX - 1), yc, z0 + (z1 - z0) * b / (GZ - 1), t);
-    G[2 * (a + GX * b)] = Ba[0] + c * t[0]; G[2 * (a + GX * b) + 1] = Ba[2] + c * t[2];
+  // the grid: a fifth of the length past each end, 0.4 of the width past each side, 0.6 of its length deep
+  const lo = [1 - 0.22 * nx, 1 - 0.4 * ny, 0], hi = [nx + 0.22 * nx, ny + 0.4 * ny, 0], zc = (nz + 1) / 2, hz = 0.3 * (hi[0] - lo[0]);
+  lo[2] = zc - hz; hi[2] = zc + hz;
+  const sp = (hi[0] - lo[0]) / 35, N = [0, 1, 2].map(a => Math.round((hi[a] - lo[a]) / sp) + 1), G = new Float32Array(3 * N[0] * N[1] * N[2]);
+  for (let k = 0; k < N[2]; k++) for (let j = 0; j < N[1]; j++) for (let i = 0; i < N[0]; i++) {
+    bs(lo[0] + i * sp, lo[1] + j * sp, lo[2] + k * sp, t); const q = 3 * (i + N[0] * (j + N[1] * k));
+    G[q] = Ba[0] + c * t[0]; G[q + 1] = Ba[1] + c * t[1]; G[q + 2] = Ba[2] + c * t[2];
   }
-  const Bat = (x, z, out) => {
-    const u = Math.min(GX - 1.001, Math.max(0, (x - x0) / (x1 - x0) * (GX - 1))), v = Math.min(GZ - 1.001, Math.max(0, (z - z0) / (z1 - z0) * (GZ - 1)));
-    const a = Math.floor(u), b = Math.floor(v), p = u - a, q = v - b, i00 = 2 * (a + GX * b), i10 = i00 + 2, i01 = i00 + 2 * GX, i11 = i01 + 2;
-    for (let n = 0; n < 2; n++) out[n] = (1 - q) * ((1 - p) * G[i00 + n] + p * G[i10 + n]) + q * ((1 - p) * G[i01 + n] + p * G[i11 + n]);
-  };
-  const b1 = [0, 0], b2 = [0, 0], st = 0.35, nl = 34, up = Ba[2] >= 0 ? 1 : -1;
-  for (let l = 0; l < nl; l++) {
-    let x = x0 + (x1 - x0) * (l + 0.5) / nl, z = up > 0 ? z0 : z1; const pts = [];
-    for (let n = 0; n < 900; n++) {
-      Bat(x, z, b1); const m1 = Math.hypot(b1[0], b1[1]) || 1;
-      pts.push([x, yc, z, m1 / bm]);
-      Bat(x + 0.5 * st * b1[0] / m1 * up, z + 0.5 * st * b1[1] / m1 * up, b2); const m2 = Math.hypot(b2[0], b2[1]) || 1;
-      x += st * b2[0] / m2 * up; z += st * b2[1] / m2 * up;
-      if (x < x0 || x > x1 || z < z0 || z > z1) break;
+  const Bat = (p, out) => {
+    const u = [0, 1, 2].map(a => Math.min(N[a] - 1.001, Math.max(0, (p[a] - lo[a]) / sp)));
+    const i = Math.floor(u[0]), j = Math.floor(u[1]), k = Math.floor(u[2]), a = u[0] - i, b = u[1] - j, cc = u[2] - k;
+    out[0] = out[1] = out[2] = 0;
+    for (let n = 0; n < 8; n++) {
+      const di = n & 1, dj = n >> 1 & 1, dk = n >> 2, w = (di ? a : 1 - a) * (dj ? b : 1 - b) * (dk ? cc : 1 - cc), q = 3 * (i + di + N[0] * (j + dj + N[1] * (k + dk)));
+      out[0] += w * G[q]; out[1] += w * G[q + 1]; out[2] += w * G[q + 2];
     }
-    lines.paths.push(pts);
+  };
+  const inside = p => p[0] >= lo[0] && p[0] <= hi[0] && p[1] >= lo[1] && p[1] <= hi[1] && p[2] >= lo[2] && p[2] <= hi[2];
+  const b1 = [0, 0, 0], b2 = [0, 0, 0], st = 0.4;
+  const trace = (p0, dir) => {
+    const p = p0.slice(), pts = [];
+    for (let n = 0; n < 1500 && inside(p); n++) {
+      Bat(p, b1); const m1 = Math.hypot(...b1) || 1;
+      pts.push([p[0], p[1], p[2], m1 / bm]);
+      Bat([p[0] + dir * 0.5 * st * b1[0] / m1, p[1] + dir * 0.5 * st * b1[1] / m1, p[2] + dir * 0.5 * st * b1[2] / m1], b2); const m2 = Math.hypot(...b2) || 1;
+      for (let a = 0; a < 3; a++) p[a] += dir * st * b2[a] / m2;
+    }
+    return pts;
+  };
+  // seeds: a staggered grid on the plane across B_a through the domain's centre, each pushed back along B_a to
+  // where it enters the domain, so every line runs the full way through
+  const e = Ba.map(v => v / bm), ref = Math.abs(e[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+  const u = [e[1] * ref[2] - e[2] * ref[1], e[2] * ref[0] - e[0] * ref[2], e[0] * ref[1] - e[1] * ref[0]], un = Math.hypot(...u); u.forEach((v, a) => u[a] = v / un);
+  const v = [e[1] * u[2] - e[2] * u[1], e[2] * u[0] - e[0] * u[2], e[0] * u[1] - e[1] * u[0]];
+  const C = [0, 1, 2].map(a => (lo[a] + hi[a]) / 2), R = 0.5 * Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]);
+  const ds = (hi[0] - lo[0]) / 10;
+  for (let a = -R; a <= R; a += ds) for (let b = -R, row = 0; b <= R; b += ds * 0.866, row++) {
+    const aa = a + (row & 1 ? ds / 2 : 0), s0 = [0, 1, 2].map(k => C[k] + aa * u[k] + b * v[k]);
+    let t0 = -Infinity, t1 = Infinity; // where the line s0 + s e enters and leaves the domain
+    for (let k = 0; k < 3; k++) { if (Math.abs(e[k]) < 1e-9) { if (s0[k] < lo[k] || s0[k] > hi[k]) { t0 = 1; t1 = 0; } continue; }
+      const q0 = (lo[k] - s0[k]) / e[k], q1 = (hi[k] - s0[k]) / e[k]; t0 = Math.max(t0, Math.min(q0, q1)); t1 = Math.min(t1, Math.max(q0, q1)); }
+    if (t1 - t0 < 0.2 * R) continue;
+    const pts = trace(s0.map((x, k) => x + (t0 + 0.01) * e[k]), 1);
+    if (pts.length > 4) lines.paths.push({ pts, core: 0 });
+  }
+  // and one through each vortex core on the top surface, traced both ways
+  const amp = (i, j) => { const q = at(i, j, nz); return Math.hypot(o.pr[q], o.pi[q]); };
+  let cores = 0;
+  for (let j = 2; j < ny && cores < 24; j++) for (let i = 7; i <= nx - 6 && cores < 24; i++) {
+    const w = amp(i, j); if (w > 0.35 || w > amp(i - 1, j) || w > amp(i + 1, j) || w > amp(i, j - 1) || w > amp(i, j + 1)) continue;
+    lines.paths.push({ pts: trace([i, j, nz], -1).reverse().concat(trace([i, j, nz], 1).slice(1)), core: 1 }); cores++;
   }
 }
 // |B| / B_a: blue where the film screens it, the ink colour at the applied field, red where it crowds
@@ -1631,20 +1659,51 @@ function bCol(r, ink) {
 function drawLines() {
   const c = $('flines'), r = canvas.getBoundingClientRect(), pr = canvas.parentElement.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
   c.hidden = !lines.on; if (!lines.on) return;
+  const W = Math.round(r.width * dpr), Hh = Math.round(r.height * dpr), cam = view.camera(canvas);
+  const key = [W, Hh, ...cam.eye.map(x => x.toFixed(4)), view.dark, lines.paths.length, lines.at].join();
+  if (key === lines.key) return; // nothing moved
+  lines.key = key;
   Object.assign(c.style, { left: `${r.left - pr.left}px`, top: `${r.top - pr.top}px`, width: `${r.width}px`, height: `${r.height}px` });
-  const W = Math.round(r.width * dpr), Hh = Math.round(r.height * dpr); if (c.width !== W || c.height !== Hh) { c.width = W; c.height = Hh; }
-  const ctx = c.getContext('2d'), cam = view.camera(canvas), sx = (sim.nx + 1) * H / 2, sy = (sim.ny + 1) * H / 2, sz = (sim.nz + 1) * H / 2;
-  const ink = view.dark ? [225, 230, 238] : [30, 34, 40];
-  ctx.clearRect(0, 0, W, Hh); ctx.lineCap = ctx.lineJoin = 'round'; ctx.lineWidth = 1.5 * dpr; ctx.globalAlpha = 0.85;
+  if (c.width !== W || c.height !== Hh) { c.width = W; c.height = Hh; }
+  const ctx = c.getContext('2d'), sx = (sim.nx + 1) * H / 2, sy = (sim.ny + 1) * H / 2, sz = (sim.nz + 1) * H / 2;
+  const ink = view.dark ? [225, 230, 238] : [30, 34, 40], halo = view.colors.bg.map(v => Math.round(v * 255));
+  // the stack as one box (film, contacts, oxide and Si), for hiding what lies behind it
+  const bl = [-(sim.nx - 1) * H / 2 - 7 * H, -(sim.ny - 1) * H / 2 - H / 2, -(sim.nz - 1) * H / 2 - 12 * H], bh = [-bl[0], -bl[1], (sim.nz - 1) * H / 2 + H];
+  const hidden = w => { // is the eye's view of w blocked by the stack?
+    const d = [w[0] - cam.eye[0], w[1] - cam.eye[1], w[2] - cam.eye[2]]; let t0 = 0, t1 = 0.999;
+    for (let k = 0; k < 3; k++) { if (Math.abs(d[k]) < 1e-9) { if (cam.eye[k] < bl[k] || cam.eye[k] > bh[k]) return false; continue; }
+      const q0 = (bl[k] - cam.eye[k]) / d[k], q1 = (bh[k] - cam.eye[k]) / d[k]; t0 = Math.max(t0, Math.min(q0, q1)); t1 = Math.min(t1, Math.max(q0, q1)); if (t0 > t1) return false; }
+    return true;
+  };
   const dot = (d, v) => d[0] * v[0] + d[1] * v[1] + d[2] * v[2];
-  const proj = g => { const d = [g[0] * H - sx - cam.eye[0], g[1] * H - sy - cam.eye[1], g[2] * H - sz - cam.eye[2]], z = dot(d, cam.fw);
-    return z < 0.1 ? null : [(dot(d, cam.rt) / (z * cam.fov) * Hh + W) / 2, (Hh - dot(d, cam.up) / (z * cam.fov) * Hh) / 2]; };
+  // whole lines in painter's order (far first), each drawn over a halo in the background colour so that a line
+  // in front cuts a gap in the ones behind it; pieces hidden by the stack are faint and get no halo
+  const L = []; let zmin = Infinity, zmax = 0;
   for (const p of lines.paths) {
-    let prev = null;
-    for (let n = 0; n < p.length; n += 2) { // every second point: short coloured pieces
-      const q = proj(p[n]);
-      if (prev && q) { ctx.strokeStyle = bCol(p[n][3], ink); ctx.beginPath(); ctx.moveTo(prev[0], prev[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
-      prev = q;
+    const pts = [];
+    for (let n = 0; n < p.pts.length; n += 2) {
+      const g = p.pts[n], w = [g[0] * H - sx, g[1] * H - sy, g[2] * H - sz], d = [w[0] - cam.eye[0], w[1] - cam.eye[1], w[2] - cam.eye[2]], z = dot(d, cam.fw);
+      pts.push(z < 0.1 ? null : { X: (dot(d, cam.rt) / (z * cam.fov) * Hh + W) / 2, Y: (Hh - dot(d, cam.up) / (z * cam.fov) * Hh) / 2, z, r: g[3], hid: hidden(w) });
+    }
+    const zs = pts.filter(Boolean).map(q => q.z); if (zs.length < 2) continue;
+    const zm = zs.reduce((a, b) => a + b, 0) / zs.length; zmin = Math.min(zmin, zm); zmax = Math.max(zmax, zm);
+    L.push({ pts, z: zm, core: p.core });
+  }
+  L.sort((a, b) => b.z - a.z);
+  ctx.clearRect(0, 0, W, Hh); ctx.lineCap = ctx.lineJoin = 'round';
+  const span = Math.max(1e-3, zmax - zmin), hc = `rgb(${halo.join(',')})`;
+  for (const l of L) {
+    const near = 1 - (l.z - zmin) / span, wd = (1.1 + 1.0 * near + (l.core ? 0.6 : 0)) * dpr; // nearer lines wider and stronger
+    // halo along the visible runs
+    const nn = l.pts.length, fadeAt = n => Math.min(1, n / (0.15 * nn), (nn - n) / (0.15 * nn)); // ends fade out, so the box the field was sampled in does not show
+    ctx.lineWidth = wd + 1.8 * dpr; ctx.strokeStyle = hc;
+    for (let n = 1; n < nn; n++) { const a = l.pts[n - 1], b = l.pts[n]; if (!a || !b || a.hid || b.hid) continue;
+      ctx.globalAlpha = 0.85 * fadeAt(n); ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke(); }
+    for (let n = 1; n < l.pts.length; n++) {
+      const a = l.pts[n - 1], b = l.pts[n]; if (!a || !b) continue;
+      const hid = a.hid && b.hid, fade = fadeAt(n);
+      ctx.globalAlpha = (hid ? 0.16 : 0.55 + 0.45 * near) * fade; ctx.lineWidth = hid ? 0.8 * wd : wd; ctx.strokeStyle = bCol(0.5 * (a.r + b.r), ink);
+      ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
     }
   }
   ctx.globalAlpha = 1;
