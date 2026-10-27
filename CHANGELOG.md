@@ -10,6 +10,10 @@
 
 - The live simulator starts at a quarter of its resolution and one solver step per frame, and only scales up while timed frames stay quick, so GPUs that time out (seen on Intel Arc under Direct3D 11) get a chance to run; if the GPU still drops the page, the 3-D view names the GPU
 
+### Fixed
+
+- A page whose WebGL context the browser has already taken away now says so, instead of reporting a missing EXT_color_buffer_float
+
 ## 2.13.4 — 2026-10-27
 
 ### Fixed

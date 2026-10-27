@@ -680,6 +680,8 @@ void main(){
 
 class Gpu3D {
   constructor(gl, { nx, ny, nz, h = 0.5, kappa = 2, dt = 0.01, B = [0, 0, 0] }) {
+    // a lost context reports every extension as missing, so say what actually happened
+    if (gl.isContextLost()) throw new Error('The browser has taken the GPU away from this page (WebGL context lost), usually after earlier GPU crashes. Quit the browser completely and reopen it.');
     if (!gl.getExtension('EXT_color_buffer_float')) throw new Error('EXT_color_buffer_float missing');
     Object.assign(this, { gl, nx, ny, nz, h, kappa, dt, B, t: 0 });
     this.tx = Math.ceil(Math.sqrt(nz)); this.ty = Math.ceil(nz / this.tx);
