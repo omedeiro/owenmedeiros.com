@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.14.0 — 2026-10-27
+
+### Added
+
+- The live simulator has a **shunt resistor** (default 20 Ω) and a series inductance (default 2 nH): the bias splits between the block and the shunt, so a hotspot pushes its current into the shunt and the block can cool, as in a shunted detector; readouts show both currents, and the notes give the selection rules from the detector literature (shunt small next to the hotspot, L/R longer than the thermal recovery)
+
+### Changed
+
+- Field lines now follow the gallery's S/I/S figure: lines in the mid-plane, coloured by |B| / B_a, with the film's own field from its supercurrent (Biot–Savart, scaled to the solver's curl A inside the film), so they bend around screening and crowd through vortices
+- The 3-D view is sharp again: it grows to 0.75 of the device resolution (was 0.6) as soon as the GPU has headroom, and the ray march is back to its finer step
 ## 2.13.5 — 2026-10-27
 
 ### Added

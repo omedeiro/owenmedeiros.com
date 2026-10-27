@@ -141,6 +141,8 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
         <button id="flowBtn" type="button">Flux flow</button>
       </div>
       <div class="ctl"><label for="cS"><span id="cLab">Bias I / I<sub>dep</sub></span> <b id="cV"></b></label><input id="cS" type="range" min="0" max="1.4" step="0.01" value="0.8"></div>
+      <div class="ctl"><label for="shS">Shunt resistor <b id="shV"></b></label><input id="shS" type="range" min="0" max="7" step="1" value="3"><span class="sub" id="shSub"></span></div>
+      <div class="ctl" id="lkBox"><label for="lkS">Series inductance <b id="lkV"></b></label><input id="lkS" type="range" min="0" max="6" step="1" value="4"></div>
       <div class="ctl" id="rateBox" hidden><label for="rateS">Sweep rate <b id="rateV"></b></label><input id="rateS" type="range" min="0.25" max="10" step="0.25" value="4"></div>
       <div class="ctl"><label for="bS">Field B <b id="bV"></b></label><input id="bS" type="range" min="0" max="0.6" step="0.01" value="0"></div>
       <div class="ctl"><label for="tS">Field tilt from z <b id="tV"></b></label><input id="tS" type="range" min="0" max="90" step="1" value="0"></div>
@@ -174,7 +176,8 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
       </div>
       <dl class="readouts">
         <dt>State</dt><dd id="rState">–</dd>
-        <dt>Bias current</dt><dd id="rI">–</dd>
+        <dt>Current in the block</dt><dd id="rI">–</dd>
+        <dt>Current in the shunt</dt><dd id="rIsh">–</dd>
         <dt>Peak film T</dt><dd id="rTf">–</dd>
         <dt>Top oxide T</dt><dd id="rTo">–</dd>
         <dt>Voltage over L/2</dt><dd id="rV">–</dd>
@@ -190,6 +193,7 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
     <h2 id="h-notes" style="color:var(--fg)">What you are looking at</h2>
     <p>The solver is the 3-D one from the vortex-tube page (ψ, the vector potential and the scalar potential μ, the current's own field on the boundary) with tdgl3d's heat model added: the generalized TDGL <i>u</i>(∂<sub>t</sub> + iμ)ψ = ∇²ψ + (1 − θ − |ψ|²)ψ with <i>u</i> = 5.79, and one temperature θ = (T − 4.2 K)/(T<sub>c</sub> − 4.2 K) heated by the full TDGL dissipation. Heat leaves the bottom of the film through a boundary resistance into four 5 nm SiO₂ layers, and the bottom layer loses it to the silicon. The contacts are normal metal held at 4.2 K. The first 5 nodes next to each contact have a stronger condensate, so the current converting from normal to supercurrent there does not heat the ends.</p>
     <p>A photon raises θ in a Gaussian of radius 9 nm through the whole thickness, holding 55 % of its energy (the rest leaves as athermal phonons). In a 39 nm block that is a small kick: a 1550 nm photon (0.8 eV) warms its spot by about 3 K and the block recovers, which is why real detectors use 5 nm films. Near the depairing current, a bigger hit (a few eV, or the thinner block) drives the spot past T<sub>c</sub>, vortices nucleate, and the block can switch to a resistive, self-heated state. Lower the bias or press Reset to recover it. In tdgl3d at 0.8 I<sub>dep</sub> and no field, θ = 0.5 and 2 recover and θ = 5 switches.</p>
+    <p><b>Shunt.</b> The bias source feeds the block through a series inductance <i>L</i> with a resistor <i>R</i><sub>sh</sub> in parallel, so <i>L</i> d<i>I</i><sub>block</sub>/d<i>t</i> = <i>R</i><sub>sh</sub>(<i>I</i><sub>bias</sub> − <i>I</i><sub>block</sub>) − <i>V</i><sub>block</sub>. Once a hotspot's resistance exceeds <i>R</i><sub>sh</sub>, the current moves into the shunt with time constant <i>L</i>/(<i>R</i><sub>sh</sub> + <i>R</i><sub>hotspot</sub>), the Joule heat drops and the block can cool; it then returns with <i>L</i>/<i>R</i><sub>sh</sub>. Two rules from the detector literature set <i>R</i><sub>sh</sub>: it must be small next to the hotspot so the block current falls below the current that keeps a hotspot alive (Skocpol, Beasley and Tinkham, J. Appl. Phys. 45, 4054 (1974)), and <i>L</i>/<i>R</i><sub>sh</sub> must be longer than the thermal recovery, or the current comes back before the film is cold and it latches (<a href="https://arxiv.org/abs/0812.0290">Kerman et al., PRB 79, 100509 (2009)</a>; <a href="https://arxiv.org/abs/1008.0895">Annunziata et al., J. Appl. Phys. 108, 084507 (2010)</a>; for an external shunt on a wide strip, <a href="https://arxiv.org/abs/2304.08762">arXiv:2304.08762</a>). This block cools in roughly 150 ps (20 nm) to 280 ps (39 nm), so the default 20 Ω and 2 nH (100 ps) sits near the edge: try 0.5 nH, where the current returns before the film is cold, and 5 nH. On the CPU reference (20 nm block, 0.8 I<sub>dep</sub>, a θ = 5 photon that latches with no shunt): 20 Ω with 0.5 nH pulls the current away before a hotspot forms, and 20 Ω with 3 nH lets a normal region grow to about 150 Ω, diverts the block current to 0.3 I<sub>dep</sub>, and retraps by about 70 ps while the current returns. The voltage for the circuit is read inside the contact banks, which carry about 0.9 mV of conversion voltage that is not hotspot.</p>
     <p>Two simplifications to keep it live: λ is far shorter than in real NbN (κ of 1 to 3 instead of about 50), because the explicit step shrinks as 1/κ², and the oxide and silicon have the film's footprint, so heat cannot spread sideways past the edges. Grid spacing is h = ξ/2 = 4.9 nm.</p>
     <div class="scroll"><table>
       <tr><td>T<sub>c</sub>, bath</td><td class="n">10 K, 4.2 K</td><td>θ = 1 at T<sub>c</sub></td></tr>
@@ -1130,9 +1134,9 @@ void main(){
   ta = max(ta, 0.); tb = min(tb, tO); if (onSkin) tb = min(tb, max(tF0.x, 0.));
   vec3 C = vec3(0.); float Tr = 1.;
   vec3 toG = vec3(1.) / h, off = (n3 + 1.) * .5;
-  float stp = .5 * h, glowB = 0.;
+  float stp = .4 * h, glowB = 0.;
   bool hit = false; float th = 0.;
-  for (int s = 0; s < 480; s++) {
+  for (int s = 0; s < 600; s++) {
     float t = ta + (float(s) + .5) * stp; if (t > tb || Tr < .02) break;
     vec3 p = eye + rd * t;
     if (p.z < lo.z) { // oxide: a pale translucent layer that glows with its temperature
@@ -1323,6 +1327,8 @@ function labels() {
   $('lV').textContent = `${(+$('lS').value).toFixed(2)} ξ`;
   $('iV').textContent = (+$('iS').value).toFixed(2);
   $('cV').textContent = (+$('cS').value).toFixed(2);
+  const rs = shR(); $('shV').textContent = rs ? `${rs} Ω` : 'none'; $('lkV').textContent = `${lNH()} nH`; $('lkBox').hidden = !rs;
+  if (sim) $('shSub').textContent = rs ? `L/R = ${(lNH() * 1000 / rs).toFixed(0)} ps to bring the current back; the whole block normal is ${rnBlock().toFixed(0)} Ω` : 'the bias source drives the block alone, so a hotspot keeps all the current';
   const e = +$('eS').value;
   $('eV').textContent = `${e.toFixed(1)} eV · ${(1239.84 / e).toFixed(0)} nm`;
   const esc = 2 ** +$('xS').value;
@@ -1336,7 +1342,8 @@ function labels() {
   if (sim) {
     const th = thetaPh();
     $('eSub').textContent = `spot peaks about ${(th * DTK).toFixed(1)} K above the bath${th > 1 ? ', past Tc' : ''}`;
-    $('rI').textContent = `${(fracNow() * idepUA()).toFixed(0)} µA of ${idepUA().toFixed(0)}`;
+    $('rI').textContent = `${(devFrac() * idepUA()).toFixed(0)} µA of ${idepUA().toFixed(0)}`;
+    $('rIsh').textContent = shR() ? `${((fracNow() - devFrac()) * idepUA()).toFixed(0)} µA` : 'no shunt';
     $('rRn').textContent = `${rnProbe().toFixed(0)} Ω`;
   }
 }
@@ -1353,8 +1360,8 @@ let sim = null, view = null, paused = false, perFrame = 1, rate = 0, frameN = 0;
 // GPU load: a lighter start, and a smaller budget after each time the GPU gives up (remembered on this device)
 let lost = 0; try { lost = +localStorage.getItem('nbn3dLost') || 0; } catch {}
 // start tiny (one step a frame, a quarter of the pixels) and grow only while the timed frames stay quick
-let target = Math.max(0.35, 0.6 * 0.75 ** lost), scale = 0.25, maxPF = Math.max(20, Math.round(120 * 0.5 ** lost)), slow = 0, quick = 0, GPU = '';
-let heating = true, vAvg = 0, hotSince = null, auto = false, nextAuto = 0, beamT = -1;
+let target = Math.max(0.35, 0.75 * 0.75 ** lost), scale = 0.25, maxPF = Math.max(20, Math.round(120 * 0.5 ** lost)), slow = 0, quick = 0, GPU = '';
+let lastSteps = 0, heating = true, vAvg = 0, hotSince = null, auto = false, nextAuto = 0, beamT = -1;
 // bias: 'hold' keeps the slider's value, 'ramp' sweeps a bipolar triangle 0 -> +peak -> 0 -> -peak -> 0, waiting
 // at each zero crossing until the block is cold and superconducting again
 const newRamp = () => ({ f: 0, dir: 1, sign: 1, t0: sim ? sim.t : 0 }); // t0: when this +/- cycle began
@@ -1366,13 +1373,34 @@ const FLOW = { B: 0.5, f: 0.2, x: 0, size: 'b' }; // the flux-flow preset, check
 const COLD = 0.03;                 // film theta (about 4.4 K) the block must cool below before the sweep crosses zero
 const DWELL = 40;                  // shortest stop at zero current between half-sweeps; it lasts until the block has cooled
 let lastTf = 0, psiMean = 1, normN = 0;       // peak film theta and mean |psi| at the last sample
+// shunt: the bias source feeds the block (with a series inductance L) in parallel with Rsh, so a hotspot's
+// resistance pushes current into the shunt and lets the block cool. L dId/dt = Rsh (Ib - Id) - Vblock.
+const SHUNT = [0, 5, 10, 20, 50, 100, 200, 500], LSER = [0.1, 0.2, 0.5, 1, 2, 5, 10]; // ohm (0 = none), nH
+const shR = () => SHUNT[+$('shS').value], lNH = () => LSER[+$('lkS').value];
+const rnBlock = () => 900 * 5 / thickNm() * sim.nx / sim.ny; // the whole block normal, ohms
+let iDev = null; // current in the block, uA (null: follow the bias)
+function vBlock() { // mV across the block, read just inside the contact banks (their conversion voltage is not hotspot) and scaled to the full length
+  const g = sim.gl, a = new Float32Array(4), b = new Float32Array(4), j = sim.ny >> 1, k = sim.nz >> 1, i0 = 9, i1 = sim.nx - 10;
+  const at = i => { const t = sim.texel(i, j, k); return [t % sim.W, Math.floor(t / sim.W)]; };
+  g.bindFramebuffer(g.FRAMEBUFFER, sim.fb); g.framebufferTexture2D(g.FRAMEBUFFER, g.COLOR_ATTACHMENT0, g.TEXTURE_2D, sim.mu, 0);
+  g.readPixels(...at(i0), 1, 1, g.RGBA, g.FLOAT, a); g.readPixels(...at(i1), 1, 1, g.RGBA, g.FLOAT, b);
+  return (a[0] - b[0]) * V0 * (sim.nx - 1) / (i1 - i0);
+}
+function circuit(steps) { // advance the block current over the steps just taken, holding the block voltage
+  const ib = fracNow() * idepUA(), r = shR();
+  if (!r || iDev === null || sim.t < 40) { iDev = ib; return; } // the first 40 tau: the switch-on transient of mu, not a hotspot
+  if (!steps) return;
+  const tau = lNH() * 1000 / r, iss = ib - vBlock() * 1000 / r; // ps; nH/ohm = ns
+  iDev = iss + (iDev - iss) * Math.exp(-steps * sim.dt * TAU / tau);
+}
+const devFrac = () => (iDev === null ? fracNow() * idepUA() : iDev) / idepUA();
 const fracNow = () => mode === 'ramp' ? ramp.sign * ramp.f : +$('cS').value;
 function build() {
   if (view && view.pnTex) gl.deleteTexture(view.pnTex);
   if (sim) sim.dispose();
   const key = $('szS').value, [nx, ny, nz] = SIZES[key], kappa = +$('lS').value;
   sim = new GpuHeat3D(gl, { nx, ny, nz, h: H, kappa, dt: dtFor(kappa), B: field(), u: 5.79, q: 0.1, Dth: 0.042, bank: 5, ox: 4, kick: 1e-4 });
-  sim.reset(0.02); sim.q = heating ? 0.1 : 0;
+  sim.reset(0.02); iDev = null; sim.q = heating ? 0.1 : 0;
   sim.setTransport(bmaps(key)); sim.term = 1;
   const keep = view && { yaw: view.yaw, pitch: view.pitch, dist: view.dist, field: view.field, heat: view.heat, skin: view.skin };
   view = new RenderHeat3D(sim); if (keep) Object.assign(view, keep);
@@ -1396,14 +1424,14 @@ function fire(x, y) { // a photon absorbed at solver coords (x, y)
   view.beam = [x - (sim.nx + 1) * H / 2, y - (sim.ny + 1) * H / 2, 0, 1]; beamT = performance.now();
 }
 function status() {
-  const now = performance.now(), ln = lines.on && now - lines.at > 250;
+  const now = performance.now(), ln = lines.on && now - lines.at > 1500;
   if (++normN % 4 === 1 || ln) { const o = sim.read(); if (normN % 4 === 1) view.setNorm(o, 5); if (ln) { lines.at = now; traceLines(o); } } // per-plane bulk |psi| for the vortex surface
   const ht = sim.readHeat();
   let tf = 0, to = 0;
   for (const v of ht.theta) tf = Math.max(tf, v);
   if (!Number.isFinite(tf) || ht.theta.some(Number.isNaN)) { // the solver blew up on this GPU: say so and start again
     showErr(`The solver went unstable on this GPU (${gpuName()}) and was reset. If this keeps happening, please send this line.`);
-    sim.reset(0.02); vAvg = 0; hist = []; return;
+    sim.reset(0.02); iDev = null; vAvg = 0; hist = []; return;
   }
   for (const v of ht.ox[0]) to = Math.max(to, v);
   $('rTf').textContent = `${(TB + DTK * tf).toFixed(2)} K`;
@@ -1411,7 +1439,7 @@ function status() {
   const v = voltage(); vAvg = 0.8 * vAvg + 0.2 * v;
   $('rV').textContent = `${(vAvg * V0).toFixed(2)} mV`;
   // one sample for the traces and, in ramp mode, for the I-V
-  const f = fracNow(), s = { t: sim.t, I: f * idepUA(), V: vAvg * V0, T: TB + DTK * tf }; // signed: + current gives + voltage
+  const f = devFrac(), s = { t: sim.t, I: f * idepUA(), V: vAvg * V0, T: TB + DTK * tf }; // signed: + current gives + voltage
   hist.push(s);
   const win = traceTau();
   while (hist.length > 2 && hist[0].t < sim.t - win) hist.shift();
@@ -1526,57 +1554,79 @@ function checkDraw() {
   const err = gl.getError();
   if (err || px[3] === 0) showErr(`The 3-D view did not draw on this GPU (${gpuName()}, ${err ? 'GL error ' + err : 'empty frame'}). Please send this line.`);
 }
-// field lines: B = curl A from the link phases, traced through the block (RK2) and continued
-// straight along the applied field outside it; seeds on a grid over the top face plus every vortex core
+// field lines in the mid-plane (y = W/2), as in the S/I/S gallery figure: the film's supercurrent J (from psi and
+// the link phases, summed over 2x2x2 cells) gives its own field by Biot-Savart, scaled so that inside the film it
+// matches the solver's B = curl A; B = B_a + that field is traced in the x-z plane from a row of seeds below the
+// block and each piece coloured by |B| / B_a. The solver itself holds B = B_a on the film's surface (no stray
+// field), so outside the film this is the field its currents would make in free space.
 const lines = { on: false, paths: [], at: 0 };
 function traceLines(o) {
-  const { nx, ny, nz } = sim, Bv = sim.B, bm = Math.hypot(...Bv);
+  const { nx, ny, nz } = sim, Ba = sim.B, bm = Math.hypot(...Ba);
   lines.paths = []; if (bm < 1e-3) return;
   const at = (I, J, K) => (I - 1) + nx * ((J - 1) + ny * (K - 1));
-  const px = (I, J, K) => o.ax[at(I, J, K)], py = (I, J, K) => o.ay[at(I, J, K)], pz = (I, J, K) => o.az[at(I, J, K)];
-  const cx = nx - 1, cy = ny - 1, cz = nz - 1, f = 1 / (H * H), C = new Float32Array(3 * cx * cy * cz);
-  for (let K = 1; K < nz; K++) for (let J = 1; J < ny; J++) for (let I = 1; I < nx; I++) { // cell-centred B, averaging the two plaquettes on either side
-    const bz = k => px(I, J, k) + py(I + 1, J, k) - px(I, J + 1, k) - py(I, J, k);
-    const bx = i => py(i, J, K) + pz(i, J + 1, K) - py(i, J, K + 1) - pz(i, J, K);
-    const by = j => pz(I, j, K) + px(I, j, K + 1) - pz(I + 1, j, K) - px(I, j, K);
-    const q = 3 * ((I - 1) + cx * ((J - 1) + cy * (K - 1)));
-    C[q] = 0.5 * f * (bx(I) + (I + 1 < nx ? bx(I + 1) : bx(I)));
-    C[q + 1] = 0.5 * f * (by(J) + (J + 1 < ny ? by(J + 1) : by(J)));
-    C[q + 2] = 0.5 * f * (bz(K) + bz(K + 1));
-  }
-  const Bat = (g, out) => { // g in node units (node I at g = I)
-    if (g[0] < 1 || g[0] > nx || g[1] < 1 || g[1] > ny || g[2] < 1 || g[2] > nz) { out[0] = Bv[0]; out[1] = Bv[1]; out[2] = Bv[2]; return; }
-    const u = [Math.min(cx - 1.001, Math.max(0, g[0] - 1.5)), Math.min(cy - 1.001, Math.max(0, g[1] - 1.5)), Math.min(cz - 1.001, Math.max(0, g[2] - 1.5))];
-    const i = Math.floor(u[0]), j = Math.floor(u[1]), k = Math.floor(u[2]), a = u[0] - i, b = u[1] - j, c = u[2] - k;
-    out[0] = out[1] = out[2] = 0;
-    for (let n = 0; n < 8; n++) {
-      const di = n & 1, dj = n >> 1 & 1, dk = n >> 2, w = (di ? a : 1 - a) * (dj ? b : 1 - b) * (dk ? c : 1 - c);
-      const ii = Math.min(cx - 1, i + di), jj = Math.min(cy - 1, j + dj), kk = Math.min(cz - 1, k + dk), q = 3 * (ii + cx * (jj + cy * kk));
-      out[0] += w * C[q]; out[1] += w * C[q + 1]; out[2] += w * C[q + 2];
+  // supercurrent on each link: Im(conj psi_I psi_I+1 e^{-i phi})
+  const jl = (a, b, ph) => { const c = Math.cos(ph), sn = Math.sin(ph), xr = o.pr[b] * c + o.pi[b] * sn, xi = o.pi[b] * c - o.pr[b] * sn; return o.pr[a] * xi - o.pi[a] * xr; };
+  const src = [];
+  for (let K = 1; K <= nz; K += 2) for (let J = 1; J <= ny; J += 2) for (let I = 1; I <= nx; I += 2) {
+    let jx = 0, jy = 0, jz = 0, cx = 0, cy = 0, cz = 0, m = 0;
+    for (let dk = 0; dk < 2; dk++) for (let dj = 0; dj < 2; dj++) for (let di = 0; di < 2; di++) {
+      const i = I + di, j = J + dj, k = K + dk; if (i > nx || j > ny || k > nz) continue;
+      const a = at(i, j, k);
+      if (i < nx) jx += jl(a, at(i + 1, j, k), o.ax[a]);
+      if (j < ny) jy += jl(a, at(i, j + 1, k), o.ay[a]);
+      if (k < nz) jz += jl(a, at(i, j, k + 1), o.az[a]);
+      cx += i; cy += j; cz += k; m++;
     }
-  };
-  const ext = Math.max(4, 0.8 * nz), b1 = [0, 0, 0], b2 = [0, 0, 0], st = 0.3;
-  const trace = (s0, dir) => {
-    const pts = [s0.slice()], g = s0.slice();
-    for (let n = 0; n < 500; n++) {
-      Bat(g, b1); let m = Math.hypot(...b1) || 1;
-      const mid = [g[0] + dir * 0.5 * st * b1[0] / m, g[1] + dir * 0.5 * st * b1[1] / m, g[2] + dir * 0.5 * st * b1[2] / m];
-      Bat(mid, b2); m = Math.hypot(...b2) || 1;
-      for (let a = 0; a < 3; a++) g[a] += dir * st * b2[a] / m;
-      pts.push(g.slice());
-      if (g[2] < 1 - ext || g[2] > nz + ext || g[0] < -1 || g[0] > nx + 2 || g[1] < -1 || g[1] > ny + 2) break;
-    }
-    return pts;
-  };
-  const seeds = [], mx = 12, my = Math.max(3, Math.round(mx * ny / nx));
-  for (let a = 0; a < mx; a++) for (let b = 0; b < my; b++) seeds.push([1 + (nx - 1) * (a + 0.5) / mx, 1 + (ny - 1) * (b + 0.5) / my, nz, 0]);
-  const amp = (i, j) => { const q = at(i, j, nz); return Math.hypot(o.pr[q], o.pi[q]); };
-  let cores = 0;
-  for (let j = 2; j < ny && cores < 30; j++) for (let i = 7; i <= nx - 6 && cores < 30; i++) {
-    const v = amp(i, j); if (v > 0.35) continue;
-    if (v <= amp(i - 1, j) && v <= amp(i + 1, j) && v <= amp(i, j - 1) && v <= amp(i, j + 1)) { seeds.push([i, j, nz, 1]); cores++; }
+    src.push(cx / m, cy / m, cz / m, jx, jy, jz);
   }
-  for (const s of seeds) lines.paths.push({ core: s[3], pts: trace(s, -1).reverse().concat(trace(s, 1).slice(1)) });
+  const eps2 = 1.0;
+  const bs = (x, y, z, out) => { // Biot-Savart of the cells, in node units
+    let bx = 0, by = 0, bz = 0;
+    for (let q = 0; q < src.length; q += 6) {
+      const rx = x - src[q], ry = y - src[q + 1], rz = z - src[q + 2], r2 = rx * rx + ry * ry + rz * rz + eps2, w = 1 / (r2 * Math.sqrt(r2));
+      const jx = src[q + 3], jy = src[q + 4], jz = src[q + 5];
+      bx += (jy * rz - jz * ry) * w; by += (jz * rx - jx * rz) * w; bz += (jx * ry - jy * rx) * w;
+    }
+    out[0] = bx; out[1] = by; out[2] = bz;
+  };
+  // scale: fit B_a + c * bs to the solver's curl A at cells inside the film
+  const f = 1 / (H * H), t = [0, 0, 0]; let num = 0, den = 0;
+  for (let K = 1; K < nz; K += Math.max(1, nz >> 2)) for (let J = 2; J < ny - 1; J += 3) for (let I = 8; I < nx - 8; I += 3) {
+    const bz = f * (o.ax[at(I, J, K)] + o.ay[at(I + 1, J, K)] - o.ax[at(I, J + 1, K)] - o.ay[at(I, J, K)]);
+    bs(I + .5, J + .5, K, t); num += (bz - Ba[2]) * t[2]; den += t[2] * t[2];
+  }
+  const c = den > 0 ? num / den : 0;
+  // the x-z grid at mid y, reaching a third of the length past each end and as far above and below
+  const ext = 0.35 * nx, x0 = 1 - ext, x1 = nx + ext, zc = (nz + 1) / 2, z0 = zc - 0.55 * (x1 - x0) * 0.45, z1 = zc + 0.55 * (x1 - x0) * 0.45;
+  const GX = 72, GZ = Math.round(GX * (z1 - z0) / (x1 - x0)), yc = (ny + 1) / 2, G = new Float32Array(2 * GX * GZ);
+  for (let b = 0; b < GZ; b++) for (let a = 0; a < GX; a++) {
+    bs(x0 + (x1 - x0) * a / (GX - 1), yc, z0 + (z1 - z0) * b / (GZ - 1), t);
+    G[2 * (a + GX * b)] = Ba[0] + c * t[0]; G[2 * (a + GX * b) + 1] = Ba[2] + c * t[2];
+  }
+  const Bat = (x, z, out) => {
+    const u = Math.min(GX - 1.001, Math.max(0, (x - x0) / (x1 - x0) * (GX - 1))), v = Math.min(GZ - 1.001, Math.max(0, (z - z0) / (z1 - z0) * (GZ - 1)));
+    const a = Math.floor(u), b = Math.floor(v), p = u - a, q = v - b, i00 = 2 * (a + GX * b), i10 = i00 + 2, i01 = i00 + 2 * GX, i11 = i01 + 2;
+    for (let n = 0; n < 2; n++) out[n] = (1 - q) * ((1 - p) * G[i00 + n] + p * G[i10 + n]) + q * ((1 - p) * G[i01 + n] + p * G[i11 + n]);
+  };
+  const b1 = [0, 0], b2 = [0, 0], st = 0.35, nl = 34, up = Ba[2] >= 0 ? 1 : -1;
+  for (let l = 0; l < nl; l++) {
+    let x = x0 + (x1 - x0) * (l + 0.5) / nl, z = up > 0 ? z0 : z1; const pts = [];
+    for (let n = 0; n < 900; n++) {
+      Bat(x, z, b1); const m1 = Math.hypot(b1[0], b1[1]) || 1;
+      pts.push([x, yc, z, m1 / bm]);
+      Bat(x + 0.5 * st * b1[0] / m1 * up, z + 0.5 * st * b1[1] / m1 * up, b2); const m2 = Math.hypot(b2[0], b2[1]) || 1;
+      x += st * b2[0] / m2 * up; z += st * b2[1] / m2 * up;
+      if (x < x0 || x > x1 || z < z0 || z > z1) break;
+    }
+    lines.paths.push(pts);
+  }
+}
+// |B| / B_a: blue where the film screens it, the ink colour at the applied field, red where it crowds
+function bCol(r, ink) {
+  const stops = [[0, [52, 120, 190]], [0.5, [110, 135, 160]], [1, ink], [1.5, [205, 40, 40]]];
+  r = Math.max(0, Math.min(1.5, r)); let k = 0; while (k < 2 && r > stops[k + 1][0]) k++;
+  const [ra, ca] = stops[k], [rb, cb] = stops[k + 1], w = (r - ra) / (rb - ra);
+  return `rgb(${ca.map((v, n) => Math.round(v + (cb[n] - v) * w)).join(',')})`;
 }
 function drawLines() {
   const c = $('flines'), r = canvas.getBoundingClientRect(), pr = canvas.parentElement.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -1584,17 +1634,18 @@ function drawLines() {
   Object.assign(c.style, { left: `${r.left - pr.left}px`, top: `${r.top - pr.top}px`, width: `${r.width}px`, height: `${r.height}px` });
   const W = Math.round(r.width * dpr), Hh = Math.round(r.height * dpr); if (c.width !== W || c.height !== Hh) { c.width = W; c.height = Hh; }
   const ctx = c.getContext('2d'), cam = view.camera(canvas), sx = (sim.nx + 1) * H / 2, sy = (sim.ny + 1) * H / 2, sz = (sim.nz + 1) * H / 2;
-  ctx.clearRect(0, 0, W, Hh); ctx.lineCap = ctx.lineJoin = 'round'; ctx.strokeStyle = css('--field');
+  const ink = view.dark ? [225, 230, 238] : [30, 34, 40];
+  ctx.clearRect(0, 0, W, Hh); ctx.lineCap = ctx.lineJoin = 'round'; ctx.lineWidth = 1.5 * dpr; ctx.globalAlpha = 0.85;
   const dot = (d, v) => d[0] * v[0] + d[1] * v[1] + d[2] * v[2];
+  const proj = g => { const d = [g[0] * H - sx - cam.eye[0], g[1] * H - sy - cam.eye[1], g[2] * H - sz - cam.eye[2]], z = dot(d, cam.fw);
+    return z < 0.1 ? null : [(dot(d, cam.rt) / (z * cam.fov) * Hh + W) / 2, (Hh - dot(d, cam.up) / (z * cam.fov) * Hh) / 2]; };
   for (const p of lines.paths) {
-    ctx.globalAlpha = p.core ? 0.95 : 0.55; ctx.lineWidth = (p.core ? 2 : 1.2) * dpr; ctx.beginPath(); let pen = false;
-    for (const g of p.pts) {
-      const d = [g[0] * H - sx - cam.eye[0], g[1] * H - sy - cam.eye[1], g[2] * H - sz - cam.eye[2]], z = dot(d, cam.fw);
-      if (z < 0.1) { pen = false; continue; }
-      const X = (dot(d, cam.rt) / (z * cam.fov) * Hh + W) / 2, Y = (Hh - dot(d, cam.up) / (z * cam.fov) * Hh) / 2;
-      if (pen) ctx.lineTo(X, Y); else { ctx.moveTo(X, Y); pen = true; }
+    let prev = null;
+    for (let n = 0; n < p.length; n += 2) { // every second point: short coloured pieces
+      const q = proj(p[n]);
+      if (prev && q) { ctx.strokeStyle = bCol(p[n][3], ink); ctx.beginPath(); ctx.moveTo(prev[0], prev[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
+      prev = q;
     }
-    ctx.stroke();
   }
   ctx.globalAlpha = 1;
 }
@@ -1636,7 +1687,7 @@ function loop() {
       else if (ramp.f <= 0) { ramp.f = 0; ramp.dir = 0; ramp.until = sim.t + DWELL; psiMean = 0; }
     }
   }
-  sim.I = fracNow() * idep();
+  circuit(lastSteps); sim.I = devFrac() * idep();
   if (auto && !paused && sim.t >= nextAuto) {
     fire(H * (6 + Math.random() * (sim.nx - 12)), H * (3 + Math.random() * (sim.ny - 6)));
     nextAuto = sim.t + 400;
@@ -1644,6 +1695,7 @@ function loop() {
   if (beamT >= 0) { const a = 1 - (performance.now() - beamT) / 500; view.beam[3] = Math.max(0, a); if (a <= 0) beamT = -1; }
   const t0 = performance.now();
   if (!paused) sim.step(perFrame);
+  lastSteps = paused ? 0 : perFrame;
   view.draw(canvas); if (drawChecks < 40 && ++drawChecks % 10 === 0) checkDraw(); drawAxes(); drawLines();
   if (!paused) sim.sync();
   const ms = performance.now() - t0;
@@ -1653,8 +1705,10 @@ function loop() {
     // drawing alone too slow: render fewer pixels
     slow = ms > 40 && perFrame <= 1 ? slow + 1 : 0;
     if (slow > 20 && scale > 0.25) { scale = Math.max(0.25, scale * 0.8); target = Math.min(target, scale); slow = 0; resize(); }
-    quick = ms < 18 ? quick + 1 : 0;
-    if (quick > 20 && scale < target) { scale = Math.min(target, scale * 1.2); quick = 0; resize(); }
+    // the solver budget fills whatever time is left, so judge headroom by it: several steps a frame at a
+    // reasonable frame time means the view can afford more pixels
+    quick = ms < 30 && perFrame >= 4 ? quick + 1 : 0;
+    if (quick > 8 && scale < target) { scale = Math.min(target, scale * 1.25); quick = 0; resize(); }
     rate = 0.9 * rate + 0.1 * (perFrame * sim.dt * 1000 / Math.max(16.7, ms));
   }
   if (++frameN % (mode === 'ramp' ? 3 : 10) === 0 && !paused) { status(); drawTrace(); drawIV(); }
@@ -1691,7 +1745,7 @@ const up = e => {
 canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
 canvas.addEventListener('wheel', e => { if (!view) return; e.preventDefault(); view.dist = Math.max(0.8, Math.min(4, view.dist * Math.exp(e.deltaY * 0.001))); }, { passive: false });
 
-for (const id of ['bS', 'tS', 'lS', 'iS', 'cS', 'eS', 'rateS', 'xS']) $(id).addEventListener('input', labels);
+for (const id of ['bS', 'tS', 'lS', 'iS', 'cS', 'eS', 'rateS', 'xS', 'shS', 'lkS']) $(id).addEventListener('input', labels);
 function setMode(m) {
   mode = m;
   $('holdBtn').setAttribute('aria-pressed', m === 'hold'); $('rampBtn').setAttribute('aria-pressed', m === 'ramp');
@@ -1715,7 +1769,7 @@ function setSkin() {
 $('skS').addEventListener('change', setSkin);
 $('fireBtn').addEventListener('click', () => fire((sim.nx + 1) * H / 2, (sim.ny + 1) * H / 2));
 $('autoBtn').addEventListener('click', () => { auto = !auto; $('autoBtn').setAttribute('aria-pressed', auto); nextAuto = sim.t + 50; });
-$('resetBtn').addEventListener('click', () => { sim.reset(0.02); vAvg = 0; hotSince = null; hist = []; if (mode === 'ramp') { ramp = newRamp(); clearIV(); } });
+$('resetBtn').addEventListener('click', () => { sim.reset(0.02); iDev = null; vAvg = 0; hotSince = null; hist = []; if (mode === 'ramp') { ramp = newRamp(); clearIV(); } });
 $('pauseBtn').addEventListener('click', () => { paused = !paused; $('pauseBtn').setAttribute('aria-pressed', paused); $('pauseBtn').textContent = paused ? 'Resume' : 'Pause'; });
 $('linesBtn').addEventListener('click', () => { lines.on = !lines.on; $('linesBtn').setAttribute('aria-pressed', lines.on); if (lines.on) traceLines(sim.read()); drawLines(); });
 $('fieldBtn').addEventListener('click', () => { view.field = !view.field; $('fieldBtn').setAttribute('aria-pressed', view.field); });
@@ -1725,7 +1779,7 @@ $('jouleBtn').addEventListener('click', () => { heating = !heating; sim.q = heat
 $('flowBtn').addEventListener('click', () => {
   setMode('hold');
   $('bS').value = FLOW.B; $('tS').value = 0; $('cS').value = FLOW.f; $('xS').value = FLOW.x; $('lS').value = 1.5;
-  if ($('szS').value !== FLOW.size) { $('szS').value = FLOW.size; build(); } else { sim.reset(0.02); hist = []; vAvg = 0; hotSince = null; }
+  if ($('szS').value !== FLOW.size) { $('szS').value = FLOW.size; build(); } else { sim.reset(0.02); iDev = null; hist = []; vAvg = 0; hotSince = null; }
   if (!heating) $('jouleBtn').click();
   labels();
 });
