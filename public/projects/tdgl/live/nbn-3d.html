@@ -58,6 +58,7 @@ summary::-webkit-details-marker { display: none; }
 summary::before { content: "▸"; display: inline-block; width: 1em; transition: transform .15s; }
 details[open] summary::before { transform: rotate(90deg); }
 .iv { padding: 12px 14px; gap: 8px; }
+.flines { position: absolute; pointer-events: none; }
 .axes { position: absolute; right: 10px; bottom: 8px; width: 76px; height: 76px; pointer-events: none; }
 .ivplot { display: grid; gap: 6px; min-width: 0; }
 .view { padding: 0; overflow: hidden; position: relative; border-radius: 16px; }
@@ -110,6 +111,7 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
     <div class="col">
       <div class="panel view">
         <canvas id="view" aria-label="3-D view of the NbN block on its SiO2 and Si stack"></canvas>
+        <canvas id="flines" class="flines" aria-hidden="true"></canvas>
         <canvas id="axes" class="axes" aria-hidden="true"></canvas>
         <div class="nogl" id="noGl" hidden></div>
         <span class="hint" id="hint">Drag to orbit · scroll or pinch to zoom · click the film to absorb a photon</span>
@@ -142,6 +144,7 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
       <div class="ctl" id="rateBox" hidden><label for="rateS">Sweep rate <b id="rateV"></b></label><input id="rateS" type="range" min="0.25" max="10" step="0.25" value="4"></div>
       <div class="ctl"><label for="bS">Field B <b id="bV"></b></label><input id="bS" type="range" min="0" max="0.6" step="0.01" value="0"></div>
       <div class="ctl"><label for="tS">Field tilt from z <b id="tV"></b></label><input id="tS" type="range" min="0" max="90" step="1" value="0"></div>
+      <div class="row"><button id="linesBtn" type="button" aria-pressed="false">Field lines</button></div>
       <div class="ctl"><label for="skS">Film shows</label>
         <select id="skS"><option value="1" selected>|ψ|, the order parameter</option><option value="2">Phase of ψ</option><option value="0">Vortex tubes inside</option></select></div>
       <div class="ctl" id="isoBox" hidden><label for="iS">Tube surface at |ψ| / bulk = <b id="iV"></b></label><input id="iS" type="range" min="0.2" max="0.8" step="0.01" value="0.5"></div>
@@ -1336,10 +1339,11 @@ function voltage() { // mu at x = L/4 minus 3L/4, mid y and z
   return a[0] - b[0];
 }
 
-let sim = null, view = null, paused = false, perFrame = 4, rate = 0, frameN = 0;
+let sim = null, view = null, paused = false, perFrame = 1, rate = 0, frameN = 0;
 // GPU load: a lighter start, and a smaller budget after each time the GPU gives up (remembered on this device)
 let lost = 0; try { lost = +localStorage.getItem('nbn3dLost') || 0; } catch {}
-let scale = Math.max(0.35, 0.6 * 0.75 ** lost), maxPF = Math.max(20, Math.round(120 * 0.5 ** lost)), slow = 0;
+// start tiny (one step a frame, a quarter of the pixels) and grow only while the timed frames stay quick
+let target = Math.max(0.35, 0.6 * 0.75 ** lost), scale = 0.25, maxPF = Math.max(20, Math.round(120 * 0.5 ** lost)), slow = 0, quick = 0, GPU = '';
 let heating = true, vAvg = 0, hotSince = null, auto = false, nextAuto = 0, beamT = -1;
 // bias: 'hold' keeps the slider's value, 'ramp' sweeps a bipolar triangle 0 -> +peak -> 0 -> -peak -> 0, waiting
 // at each zero crossing until the block is cold and superconducting again
@@ -1381,7 +1385,8 @@ function fire(x, y) { // a photon absorbed at solver coords (x, y)
   view.beam = [x - (sim.nx + 1) * H / 2, y - (sim.ny + 1) * H / 2, 0, 1]; beamT = performance.now();
 }
 function status() {
-  if (++normN % 4 === 1) view.setNorm(sim.read(), 5); // per-plane bulk |psi| for the vortex surface
+  const now = performance.now(), ln = lines.on && now - lines.at > 250;
+  if (++normN % 4 === 1 || ln) { const o = sim.read(); if (normN % 4 === 1) view.setNorm(o, 5); if (ln) { lines.at = now; traceLines(o); } } // per-plane bulk |psi| for the vortex surface
   const ht = sim.readHeat();
   let tf = 0, to = 0;
   for (const v of ht.theta) tf = Math.max(tf, v);
@@ -1504,11 +1509,83 @@ function showErr(msg) { $('errBox').hidden = false; $('errBox').textContent = ms
 // after the first frames, look at the centre pixel the 3-D pass wrote: a lost context or a pass that drew nothing is reported
 let drawChecks = 0;
 function checkDraw() {
-  if (gl.isContextLost()) return showErr('The browser took the GPU away from this page (WebGL context lost). It will try to restore it; reloading the page also works.');
+  if (gl.isContextLost()) return showErr(`The GPU stopped responding (WebGL context lost, ${GPU}). It will try to restore it; reloading the page also works.`);
   const px = new Uint8Array(4); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.readPixels(canvas.width >> 1, canvas.height >> 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
   const err = gl.getError();
   if (err || px[3] === 0) showErr(`The 3-D view did not draw on this GPU (${gpuName()}, ${err ? 'GL error ' + err : 'empty frame'}). Please send this line.`);
+}
+// field lines: B = curl A from the link phases, traced through the block (RK2) and continued
+// straight along the applied field outside it; seeds on a grid over the top face plus every vortex core
+const lines = { on: false, paths: [], at: 0 };
+function traceLines(o) {
+  const { nx, ny, nz } = sim, Bv = sim.B, bm = Math.hypot(...Bv);
+  lines.paths = []; if (bm < 1e-3) return;
+  const at = (I, J, K) => (I - 1) + nx * ((J - 1) + ny * (K - 1));
+  const px = (I, J, K) => o.ax[at(I, J, K)], py = (I, J, K) => o.ay[at(I, J, K)], pz = (I, J, K) => o.az[at(I, J, K)];
+  const cx = nx - 1, cy = ny - 1, cz = nz - 1, f = 1 / (H * H), C = new Float32Array(3 * cx * cy * cz);
+  for (let K = 1; K < nz; K++) for (let J = 1; J < ny; J++) for (let I = 1; I < nx; I++) { // cell-centred B, averaging the two plaquettes on either side
+    const bz = k => px(I, J, k) + py(I + 1, J, k) - px(I, J + 1, k) - py(I, J, k);
+    const bx = i => py(i, J, K) + pz(i, J + 1, K) - py(i, J, K + 1) - pz(i, J, K);
+    const by = j => pz(I, j, K) + px(I, j, K + 1) - pz(I + 1, j, K) - px(I, j, K);
+    const q = 3 * ((I - 1) + cx * ((J - 1) + cy * (K - 1)));
+    C[q] = 0.5 * f * (bx(I) + (I + 1 < nx ? bx(I + 1) : bx(I)));
+    C[q + 1] = 0.5 * f * (by(J) + (J + 1 < ny ? by(J + 1) : by(J)));
+    C[q + 2] = 0.5 * f * (bz(K) + bz(K + 1));
+  }
+  const Bat = (g, out) => { // g in node units (node I at g = I)
+    if (g[0] < 1 || g[0] > nx || g[1] < 1 || g[1] > ny || g[2] < 1 || g[2] > nz) { out[0] = Bv[0]; out[1] = Bv[1]; out[2] = Bv[2]; return; }
+    const u = [Math.min(cx - 1.001, Math.max(0, g[0] - 1.5)), Math.min(cy - 1.001, Math.max(0, g[1] - 1.5)), Math.min(cz - 1.001, Math.max(0, g[2] - 1.5))];
+    const i = Math.floor(u[0]), j = Math.floor(u[1]), k = Math.floor(u[2]), a = u[0] - i, b = u[1] - j, c = u[2] - k;
+    out[0] = out[1] = out[2] = 0;
+    for (let n = 0; n < 8; n++) {
+      const di = n & 1, dj = n >> 1 & 1, dk = n >> 2, w = (di ? a : 1 - a) * (dj ? b : 1 - b) * (dk ? c : 1 - c);
+      const ii = Math.min(cx - 1, i + di), jj = Math.min(cy - 1, j + dj), kk = Math.min(cz - 1, k + dk), q = 3 * (ii + cx * (jj + cy * kk));
+      out[0] += w * C[q]; out[1] += w * C[q + 1]; out[2] += w * C[q + 2];
+    }
+  };
+  const ext = Math.max(4, 0.8 * nz), b1 = [0, 0, 0], b2 = [0, 0, 0], st = 0.3;
+  const trace = (s0, dir) => {
+    const pts = [s0.slice()], g = s0.slice();
+    for (let n = 0; n < 500; n++) {
+      Bat(g, b1); let m = Math.hypot(...b1) || 1;
+      const mid = [g[0] + dir * 0.5 * st * b1[0] / m, g[1] + dir * 0.5 * st * b1[1] / m, g[2] + dir * 0.5 * st * b1[2] / m];
+      Bat(mid, b2); m = Math.hypot(...b2) || 1;
+      for (let a = 0; a < 3; a++) g[a] += dir * st * b2[a] / m;
+      pts.push(g.slice());
+      if (g[2] < 1 - ext || g[2] > nz + ext || g[0] < -1 || g[0] > nx + 2 || g[1] < -1 || g[1] > ny + 2) break;
+    }
+    return pts;
+  };
+  const seeds = [], mx = 12, my = Math.max(3, Math.round(mx * ny / nx));
+  for (let a = 0; a < mx; a++) for (let b = 0; b < my; b++) seeds.push([1 + (nx - 1) * (a + 0.5) / mx, 1 + (ny - 1) * (b + 0.5) / my, nz, 0]);
+  const amp = (i, j) => { const q = at(i, j, nz); return Math.hypot(o.pr[q], o.pi[q]); };
+  let cores = 0;
+  for (let j = 2; j < ny && cores < 30; j++) for (let i = 7; i <= nx - 6 && cores < 30; i++) {
+    const v = amp(i, j); if (v > 0.35) continue;
+    if (v <= amp(i - 1, j) && v <= amp(i + 1, j) && v <= amp(i, j - 1) && v <= amp(i, j + 1)) { seeds.push([i, j, nz, 1]); cores++; }
+  }
+  for (const s of seeds) lines.paths.push({ core: s[3], pts: trace(s, -1).reverse().concat(trace(s, 1).slice(1)) });
+}
+function drawLines() {
+  const c = $('flines'), r = canvas.getBoundingClientRect(), pr = canvas.parentElement.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  c.hidden = !lines.on; if (!lines.on) return;
+  Object.assign(c.style, { left: `${r.left - pr.left}px`, top: `${r.top - pr.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+  const W = Math.round(r.width * dpr), Hh = Math.round(r.height * dpr); if (c.width !== W || c.height !== Hh) { c.width = W; c.height = Hh; }
+  const ctx = c.getContext('2d'), cam = view.camera(canvas), sx = (sim.nx + 1) * H / 2, sy = (sim.ny + 1) * H / 2, sz = (sim.nz + 1) * H / 2;
+  ctx.clearRect(0, 0, W, Hh); ctx.lineCap = ctx.lineJoin = 'round'; ctx.strokeStyle = css('--field');
+  const dot = (d, v) => d[0] * v[0] + d[1] * v[1] + d[2] * v[2];
+  for (const p of lines.paths) {
+    ctx.globalAlpha = p.core ? 0.95 : 0.55; ctx.lineWidth = (p.core ? 2 : 1.2) * dpr; ctx.beginPath(); let pen = false;
+    for (const g of p.pts) {
+      const d = [g[0] * H - sx - cam.eye[0], g[1] * H - sy - cam.eye[1], g[2] * H - sz - cam.eye[2]], z = dot(d, cam.fw);
+      if (z < 0.1) { pen = false; continue; }
+      const X = (dot(d, cam.rt) / (z * cam.fov) * Hh + W) / 2, Y = (Hh - dot(d, cam.up) / (z * cam.fov) * Hh) / 2;
+      if (pen) ctx.lineTo(X, Y); else { ctx.moveTo(X, Y); pen = true; }
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
 }
 function drawAxes() {
   const c = $('axes'), dpr = Math.min(2, window.devicePixelRatio || 1), n = Math.round(76 * dpr);
@@ -1556,7 +1633,7 @@ function loop() {
   if (beamT >= 0) { const a = 1 - (performance.now() - beamT) / 500; view.beam[3] = Math.max(0, a); if (a <= 0) beamT = -1; }
   const t0 = performance.now();
   if (!paused) sim.step(perFrame);
-  view.draw(canvas); if (drawChecks < 40 && ++drawChecks % 10 === 0) checkDraw(); drawAxes();
+  view.draw(canvas); if (drawChecks < 40 && ++drawChecks % 10 === 0) checkDraw(); drawAxes(); drawLines();
   if (!paused) sim.sync();
   const ms = performance.now() - t0;
   if (!paused) {
@@ -1564,7 +1641,9 @@ function loop() {
     else if (ms < 12 && perFrame < maxPF) perFrame = Math.min(maxPF, Math.ceil(perFrame * 1.15));
     // drawing alone too slow: render fewer pixels
     slow = ms > 40 && perFrame <= 1 ? slow + 1 : 0;
-    if (slow > 20 && scale > 0.35) { scale = Math.max(0.35, scale * 0.8); slow = 0; resize(); }
+    if (slow > 20 && scale > 0.25) { scale = Math.max(0.25, scale * 0.8); target = Math.min(target, scale); slow = 0; resize(); }
+    quick = ms < 18 ? quick + 1 : 0;
+    if (quick > 20 && scale < target) { scale = Math.min(target, scale * 1.2); quick = 0; resize(); }
     rate = 0.9 * rate + 0.1 * (perFrame * sim.dt * 1000 / Math.max(16.7, ms));
   }
   if (++frameN % (mode === 'ramp' ? 3 : 10) === 0 && !paused) { status(); drawTrace(); drawIV(); }
@@ -1627,6 +1706,7 @@ $('fireBtn').addEventListener('click', () => fire((sim.nx + 1) * H / 2, (sim.ny 
 $('autoBtn').addEventListener('click', () => { auto = !auto; $('autoBtn').setAttribute('aria-pressed', auto); nextAuto = sim.t + 50; });
 $('resetBtn').addEventListener('click', () => { sim.reset(0.02); vAvg = 0; hotSince = null; hist = []; if (mode === 'ramp') { ramp = newRamp(); clearIV(); } });
 $('pauseBtn').addEventListener('click', () => { paused = !paused; $('pauseBtn').setAttribute('aria-pressed', paused); $('pauseBtn').textContent = paused ? 'Resume' : 'Pause'; });
+$('linesBtn').addEventListener('click', () => { lines.on = !lines.on; $('linesBtn').setAttribute('aria-pressed', lines.on); if (lines.on) traceLines(sim.read()); drawLines(); });
 $('fieldBtn').addEventListener('click', () => { view.field = !view.field; $('fieldBtn').setAttribute('aria-pressed', view.field); });
 $('heatBtn').addEventListener('click', () => { view.heat = !view.heat; $('heatBtn').setAttribute('aria-pressed', view.heat); });
 $('jouleBtn').addEventListener('click', () => { heating = !heating; sim.q = heating ? 0.1 : 0; $('jouleBtn').setAttribute('aria-pressed', heating); });
@@ -1641,7 +1721,12 @@ $('flowBtn').addEventListener('click', () => {
 canvas.addEventListener('webglcontextlost', e => {
   e.preventDefault(); lost++; try { localStorage.setItem('nbn3dLost', lost); } catch {}
   scale = Math.max(0.35, scale * 0.75); maxPF = Math.max(20, Math.round(maxPF * 0.5)); perFrame = Math.min(perFrame, 4);
-  showErr('The GPU stopped responding (WebGL context lost); restarting at a lower resolution and fewer steps per frame…');
+  showErr(`The GPU stopped responding (WebGL context lost, ${GPU}); restarting at a lower resolution and fewer steps per frame…`);
+  setTimeout(() => { if (!gl.isContextLost()) return;
+    $('noGl').hidden = false; $('ampKey').hidden = true; $('hint').hidden = true;
+    $('noGl').innerHTML = '<b>The GPU stopped responding and the browser has not given it back.</b>'
+      + `<span>GPU: <b>${GPU || 'unknown'}</b>. Please send this line.</span>`
+      + '<span>Reload the page to try again; it now starts at a lower resolution and fewer solver steps on this device.</span>'; }, 3000);
 });
 canvas.addEventListener('webglcontextrestored', () => { try { sim = null; build(); setSkin(); $('errBox').hidden = true; } catch (e) { showErr(String(e && e.message || e)); } });
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeColors); } catch {}
@@ -1668,7 +1753,7 @@ if (!gl) {
 }
 else {
   try {
-    build(); setSkin();
+    GPU = gpuName(); build(); setSkin();
     requestAnimationFrame(loop);
     setTimeout(() => { try { $('checkNote').textContent = `GPU check: after 300 steps with a current, a tilted field, a photon and the oxide, this GPU's ψ and temperatures match the double-precision reference (which matches tdgl3d to round-off) to ${check().toExponential(1)} (${gpuName()}).`; } catch (e) { $('checkNote').textContent = 'GPU check could not run: ' + e.message; } }, 1500);
   } catch (e) { $('errBox').hidden = false; $('errBox').textContent = String(e && e.message || e); }
