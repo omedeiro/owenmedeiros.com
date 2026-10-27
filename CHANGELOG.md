@@ -13,6 +13,7 @@
 ### Fixed
 
 - A page whose WebGL context the browser has already taken away now says so, instead of reporting a missing EXT_color_buffer_float
+- The 3-D view's shader no longer indexes a uniform array by plane (Direct3D 11 expands that into a long branch chain inside the ray march) and reads the field glow's links directly, a likely cause of Chrome on Windows dropping the page
 
 ## 2.13.4 — 2026-10-27
 

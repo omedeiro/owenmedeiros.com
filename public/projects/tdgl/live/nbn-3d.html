@@ -1029,10 +1029,11 @@ out vec4 o;
 uniform vec2 res; uniform vec3 eye, fw, rt, up; uniform float fov, iso, fieldOn, bmag, heatOn, heatK, skin, dark;
 uniform vec3 cBg, cBg2, cEdge, cTube, cField, cLead, cOx, cSi, cBeam; uniform vec4 beam;
 uniform sampler2D OX;
-uniform float pn[32];   // bulk |psi| of each z-plane: the surface is drawn on (|psi| / bulk)^2, so heat or
+uniform sampler2D PN;   // .x: bulk |psi| of each z-plane (a texture, not a uniform array: Direct3D turns a
+                        // dynamically indexed uniform array into a long branch chain that stalls its compiler); the surface is drawn on (|psi| / bulk)^2, so heat or
                         // surface suppression that lowers a whole plane does not read as a vortex
 ` + GLSL_GRID + `
-float node(int I, int J, int K){ I = clamp(I, 1, nx); J = clamp(J, 1, ny); K = clamp(K, 1, nz); vec2 p = s0(I, J, K).xy / pn[K - 1]; return dot(p, p); }
+float node(int I, int J, int K){ I = clamp(I, 1, nx); J = clamp(J, 1, ny); K = clamp(K, 1, nz); vec2 p = s0(I, J, K).xy / texelFetch(PN, ivec2(K - 1, 0), 0).x; return dot(p, p); }
 float amp(vec3 g){
   vec3 b = floor(g), f = g - b; int I = int(b.x), J = int(b.y), K = int(b.z);
   float a = mix(mix(node(I,J,K), node(I+1,J,K), f.x), mix(node(I,J+1,K), node(I+1,J+1,K), f.x), f.y);
@@ -1070,9 +1071,12 @@ float theta(vec3 g){
 float bnode(vec3 g){
   int I = int(g.x + .5), J = int(g.y + .5), K = int(g.z + .5);
   I = clamp(I, 1, nx - 1); J = clamp(J, 1, ny - 1); K = clamp(K, 1, nz - 1);
-  float bz = phix(I,J,K) + phiy(I+1,J,K) - phix(I,J+1,K) - phiy(I,J,K);
-  float bx = phiy(I,J,K) + phiz(I,J+1,K) - phiy(I,J,K+1) - phiz(I,J,K);
-  float by = phiz(I,J,K) + phix(I,J,K+1) - phiz(I+1,J,K) - phix(I,J,K);
+  // every link here is interior, so read the state directly rather than through phix/phiy/phiz's ghost branches
+  vec4 a = s0(I,J,K), ax = s0(I+1,J,K), ay = s0(I,J+1,K), az = s0(I,J,K+1);
+  float z0 = s1(I,J,K), zx = s1(I+1,J,K), zy = s1(I,J+1,K);
+  float bz = a.z + ax.w - ay.z - a.w;
+  float bx = a.w + zy - az.w - z0;
+  float by = z0 + az.z - zx - a.z;
   return length(vec3(bx, by, bz)) / (h * h); }
 // slab test: (t_in, t_out), entry face normal in nrm
 vec2 box(vec3 lo, vec3 hi, vec3 rd, out vec3 nrm){
@@ -1219,6 +1223,10 @@ class RenderHeat3D {
     this.sim = sim; this.prog = sim.prog(RAY);
     this.yaw = -0.9; this.pitch = 0.5; this.dist = 1.45; this.iso = 0.5; this.skin = 1; this.dark = 0; this.field = false; this.heat = true; this.heatK = 1.6;
     this.beam = [0, 0, 0, 0]; this.norm = new Float32Array(32).fill(1);
+    const gl = sim.gl; this.pnTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, this.pnTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, 32, 1, 0, gl.RED, gl.FLOAT, this.norm);
+    for (const q of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, q, gl.NEAREST);
+    for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, q, gl.CLAMP_TO_EDGE);
     this.colors = { bg: [1, 1, 1], bg2: [.9, .92, .95], edge: [0, 0, 0], tube: [1, .5, .2], field: [.2, .4, 1], lead: [.83, .66, .3], ox: [.8, .88, .95], si: [.5, .53, .58], beam: [.4, .7, 1] };
   }
   camera(canvas) { // eye and the screen basis, kept for picking
@@ -1260,7 +1268,7 @@ class RenderHeat3D {
     gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, s.oxT[0]); gl.uniform1i(L('OX'), 6);
     gl.uniform2f(L('res'), canvas.width, canvas.height);
     gl.uniform3f(L('eye'), ...c.eye); gl.uniform3f(L('fw'), ...c.fw); gl.uniform3f(L('rt'), ...c.rt); gl.uniform3f(L('up'), ...c.up);
-    gl.uniform1f(L('fov'), c.fov); gl.uniform1f(L('iso'), this.iso * this.iso); gl.uniform1fv(L('pn'), this.norm); gl.uniform1f(L('fieldOn'), this.field ? 1 : 0);
+    gl.uniform1f(L('fov'), c.fov); gl.uniform1f(L('iso'), this.iso * this.iso); gl.activeTexture(gl.TEXTURE7); gl.bindTexture(gl.TEXTURE_2D, this.pnTex); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 32, 1, gl.RED, gl.FLOAT, this.norm); gl.uniform1i(L('PN'), 7); gl.uniform1f(L('fieldOn'), this.field ? 1 : 0);
     gl.uniform1f(L('heatOn'), this.heat ? 1 : 0); gl.uniform1f(L('skin'), this.skin); gl.uniform1f(L('dark'), this.dark); gl.uniform1f(L('heatK'), this.heatK);
     gl.uniform1f(L('bmag'), Math.hypot(...s.B)); gl.uniform4f(L('beam'), ...this.beam);
     const k = this.colors;
@@ -1360,6 +1368,7 @@ const DWELL = 40;                  // shortest stop at zero current between half
 let lastTf = 0, psiMean = 1, normN = 0;       // peak film theta and mean |psi| at the last sample
 const fracNow = () => mode === 'ramp' ? ramp.sign * ramp.f : +$('cS').value;
 function build() {
+  if (view && view.pnTex) gl.deleteTexture(view.pnTex);
   if (sim) sim.dispose();
   const key = $('szS').value, [nx, ny, nz] = SIZES[key], kappa = +$('lS').value;
   sim = new GpuHeat3D(gl, { nx, ny, nz, h: H, kappa, dt: dtFor(kappa), B: field(), u: 5.79, q: 0.1, Dth: 0.042, bank: 5, ox: 4, kick: 1e-4 });
