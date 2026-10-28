@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.14.4 — 2026-10-28
+
+### Fixed
+
+- The live simulator's 3-D view is sharp again on devices that lost the GPU before 2.14.3 (every Windows Chrome, from the Direct3D shader bug): the page remembered each lost context and capped its resolution at a third, permanently. That count now starts over under a new key, a minute without a lost context forgives one earlier loss, and a slow patch (another tab, the GPU check) lowers the resolution for 20 s instead of for the rest of the visit
+- With headroom, the view now grows to every device pixel (up to 2x), not three quarters of them
+
 ## 2.14.3 — 2026-10-28
 
 ### Fixed
