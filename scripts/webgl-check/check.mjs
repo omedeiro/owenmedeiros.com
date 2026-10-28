@@ -35,7 +35,7 @@ try {
         const r = d.apply(this, a); n++;
         if (!window.__glBad && (this.getError() || this.isContextLost())) {
           const s = (cur && att.get(cur)) || '';
-          window.__glBad = { draw: n, lost: this.isContextLost(), outs: (s.match(/layout\s*\(\s*location[^;]*out[^;]*;/g) || []).join(' '), head: s.replace(/\s+/g, ' ').slice(0, 1500) };
+          window.__glBad = { draw: n, lost: this.isContextLost(), outs: (s.match(/layout\s*\(\s*location[^;]*out[^;]*;/g) || []).join(' '), main: s.replace(/\s+/g, ' ').slice(-1500) };
           console.error('first failing draw #' + n + ': ' + JSON.stringify(window.__glBad));
         }
         return r;
