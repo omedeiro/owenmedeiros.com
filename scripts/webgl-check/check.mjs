@@ -17,7 +17,10 @@ const server = http.createServer((req, res) => {
 }).listen(0);
 const port = server.address().port;
 
-const args = ['--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'];
+// Chrome's own log (ANGLE writes the Direct3D shader compiler's errors there) and the translated HLSL of the
+// shaders, for when a draw fails
+const logFile = path.resolve(`chrome-${backend}.log`);
+const args = ['--ignore-gpu-blocklist', '--enable-unsafe-swiftshader', '--enable-logging', `--log-file=${logFile}`, '--v=0', '--enable-privileged-webgl-extensions'];
 if (backend !== 'default') args.push('--use-gl=angle', `--use-angle=${backend}`);
 const problems = [];
 const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, headless: true, args } : { channel: 'chrome', headless: true, args });
@@ -35,6 +38,8 @@ try {
         const r = d.apply(this, a); n++;
         if (!window.__glBad && (this.getError() || this.isContextLost())) {
           const s = (cur && att.get(cur)) || '';
+          let hlsl = ''; try { const x = this.getExtension('WEBGL_debug_shaders'), sh = this.getAttachedShaders(cur).find(q => this.getShaderParameter(q, this.SHADER_TYPE) === this.FRAGMENT_SHADER); hlsl = x && sh ? x.getTranslatedShaderSource(sh) : 'no WEBGL_debug_shaders'; } catch (e) { hlsl = 'translated source unavailable: ' + e.message; }
+          window.__glHlsl = hlsl;
           window.__glBad = { draw: n, lost: this.isContextLost(), outs: (s.match(/layout\s*\(\s*location[^;]*out[^;]*;/g) || []).join(' '), main: s.replace(/\s+/g, ' ').slice(-1500) };
           console.error('first failing draw #' + n + ': ' + JSON.stringify(window.__glBad));
         }
@@ -78,7 +83,13 @@ try {
   if (/could not run/.test(end.check)) problems.push(end.check);
   log('canvas', JSON.stringify(await page.evaluate(() => { const c = document.getElementById('view'); return { buffer: [c.width, c.height], css: [c.clientWidth, c.clientHeight] }; })));
   await page.screenshot({ path: `webgl-${backend}${url ? '-live' : ''}.png` });
+  const hlsl = await page.evaluate(() => window.__glHlsl || '');
+  if (hlsl) { fs.writeFileSync(`shader-${backend}.hlsl`, hlsl); log(`translated shader saved (${hlsl.length} chars)`); }
 } catch (e) { problems.push('check script: ' + e.message); }
 finally { await browser.close(); server.close(); }
+try { // the browser's log lines about shaders and the GPU
+  const lines = fs.readFileSync(logFile, 'utf8').split(/\r?\n/).filter(l => /error X|warning X|HLSL|compil|D3D11|shader|lost/i.test(l));
+  if (lines.length) log('chrome log:\n' + lines.slice(0, 60).join('\n'));
+} catch (e) { log('no chrome log: ' + e.message); }
 if (problems.length) { console.log(`::error::${backend}${url ? ' live' : ''}: ` + problems.join(' | ')); process.exit(1); }
 log('OK');

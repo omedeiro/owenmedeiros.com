@@ -88,3 +88,5 @@ scripts/.env
 
 # screenshots from scripts/webgl-check
 webgl-*.png
+shader-*.hlsl
+chrome-*.log
