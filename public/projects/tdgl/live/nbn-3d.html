@@ -1370,10 +1370,15 @@ function voltage() { // mu at x = L/4 minus 3L/4, mid y and z
 
 let sim = null, view = null, paused = false, perFrame = 1, rate = 0, frameN = 0;
 // GPU load: a lighter start, and a smaller budget after each time the GPU gives up (remembered on this device)
-let lost = 0; try { lost = +localStorage.getItem('nbn3dLost') || 0; } catch {}
-// start tiny (one step a frame, a quarter of the pixels) and grow only while the timed frames stay quick
-let target = Math.max(0.35, 0.75 * 0.75 ** lost), scale = 0.25, maxPF = Math.max(20, Math.round(120 * 0.5 ** lost)), slow = 0, quick = 0, GPU = '';
-let lastSteps = 0, heating = true, vAvg = 0, hotSince = null, auto = false, nextAuto = 0, beamT = -1;
+// (a new key: the losses counted under 'nbn3dLost' came from a Direct3D shader bug, fixed in 2.14.3, and left
+// Windows devices stuck at a third of the resolution)
+const LOST_KEY = 'nbn3dLost2';
+let lost = 0; try { localStorage.removeItem('nbn3dLost'); lost = +localStorage.getItem(LOST_KEY) || 0; } catch {}
+// start tiny (one step a frame, a quarter of the pixels) and grow only while the timed frames stay quick, up to
+// every device pixel (to 2x); a minute without a lost context forgives one earlier loss
+const fullScale = () => Math.max(0.35, 0.75 ** lost);
+let target = fullScale(), scale = 0.25, maxPF = Math.max(20, Math.round(120 * 0.5 ** lost)), slow = 0, quick = 0, GPU = '', capUntil = 0;
+let forgiven = 0, lastSteps = 0, heating = true, vAvg = 0, hotSince = null, auto = false, nextAuto = 0, beamT = -1;
 // bias: 'hold' keeps the slider's value, 'ramp' sweeps a bipolar triangle 0 -> +peak -> 0 -> -peak -> 0, waiting
 // at each zero crossing until the block is cold and superconducting again
 const newRamp = () => ({ f: 0, dir: 1, sign: 1, t0: sim ? sim.t : 0 }); // t0: when this +/- cycle began
@@ -1831,13 +1836,15 @@ function loop() {
     else if (ms < 12 && perFrame < maxPF) perFrame = Math.min(maxPF, Math.ceil(perFrame * 1.15));
     // drawing alone too slow: render fewer pixels
     slow = ms > 40 && perFrame <= 1 ? slow + 1 : 0;
-    if (slow > 20 && scale > 0.25) { scale = Math.max(0.25, scale * 0.8); target = Math.min(target, scale); slow = 0; resize(); }
+    if (slow > 20 && scale > 0.25) { scale = Math.max(0.25, scale * 0.8); target = Math.min(target, scale); capUntil = performance.now() + 20000; slow = 0; resize(); }
+    if (capUntil && performance.now() > capUntil) { target = fullScale(); capUntil = 0; } // a slow patch (another tab, the GPU check) is not a verdict on the GPU
     // the solver budget fills whatever time is left, so judge headroom by it: several steps a frame at a
     // reasonable frame time means the view can afford more pixels
     quick = ms < 30 && perFrame >= 4 ? quick + 1 : 0;
     if (quick > 8 && scale < target) { scale = Math.min(target, scale * 1.25); quick = 0; resize(); }
     rate = 0.9 * rate + 0.1 * (perFrame * sim.dt * 1000 / Math.max(16.7, ms));
   }
+  if (lost && !forgiven && performance.now() > 60000) { lost--; forgiven = 1; try { localStorage.setItem(LOST_KEY, lost); } catch {} target = fullScale(); maxPF = Math.max(maxPF, Math.round(120 * 0.5 ** lost)); }
   if (++frameN % (mode === 'ramp' ? 3 : 10) === 0 && !paused) { status(); drawTrace(); drawIV(); }
   $('rT').textContent = `${(sim.t * TAU).toFixed(1)} ps`;
   $('rS').textContent = paused ? 'paused' : `${(rate * TAU).toFixed(2)} ps/s`;
@@ -1911,7 +1918,7 @@ $('flowBtn').addEventListener('click', () => {
   labels();
 });
 canvas.addEventListener('webglcontextlost', e => {
-  e.preventDefault(); lost++; try { localStorage.setItem('nbn3dLost', lost); } catch {}
+  e.preventDefault(); lost++; forgiven = 1; try { localStorage.setItem(LOST_KEY, lost); } catch {}
   report('context-lost', '', { t: sim ? +sim.t.toFixed(1) : null });
   scale = Math.max(0.35, scale * 0.75); maxPF = Math.max(20, Math.round(maxPF * 0.5)); perFrame = Math.min(perFrame, 4);
   showErr(`The GPU stopped responding (WebGL context lost, ${GPU}); restarting at a lower resolution and fewer steps per frame…`);
