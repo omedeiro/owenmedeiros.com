@@ -3,6 +3,7 @@ name: Live simulator on Windows Chrome
 # Opens public/projects/tdgl/live/nbn-3d.html in Chrome on a Windows runner, once per ANGLE backend, and logs
 # what a visitor would see (renderer, errors, GPU check, solver progress). The runner has no GPU, so Direct3D 11
 # runs on Microsoft's software rasterizer (WARP): same shader translation as a real Windows GPU, not its driver.
+# Each backend loads both this branch's copy and the deployed page on owenmedeiros.com.
 
 on:
   workflow_dispatch:
@@ -19,6 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         angle: [default, d3d11, d3d11-warp, swiftshader]
+        page: ["", "https://owenmedeiros.com/projects/tdgl/live/nbn-3d.html"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,9 +29,9 @@ jobs:
       - name: Install playwright-core (uses the runner's installed Chrome)
         run: npm install --no-save --no-package-lock playwright-core@1.49.1
       - name: Load the simulator
-        run: node scripts/webgl-check/check.mjs ${{ matrix.angle }}
+        run: node scripts/webgl-check/check.mjs ${{ matrix.angle }} "${{ matrix.page }}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: screenshot-${{ matrix.angle }}
+          name: screenshot-${{ matrix.angle }}${{ matrix.page && '-live' || '' }}
           path: webgl-*.png
