@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.14.3 — 2026-10-28
+
+### Fixed
+
+- The live simulator's field lines respect the film's Meissner screening: lines are now seeded evenly in flux on a plane through the film (each line carries the same flux) instead of evenly in area upstream, and inside the block the traced field is the solver's own B = curl A at every node instead of the coarse Biot–Savart estimate, which leaked the crowded edge field into the film. Lines now drape around the screened film and cross it only through vortex cores and the outer λ of its edges, where the solver lets flux in
+
 ## 2.14.2 — 2026-10-28
 
 ### Added

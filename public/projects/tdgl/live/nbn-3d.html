@@ -1556,9 +1556,8 @@ function checkDraw() {
 }
 // 3-D field lines. The film's supercurrent J (from psi and the link phases, summed over 2x2x2 cells) gives its
 // own field by Biot-Savart, scaled so that inside the film it matches the solver's B = curl A; B = B_a + that
-// field is sampled on a 3-D grid around the stack and traced (RK2) from seeds spread evenly over a plane
-// across the applied field, upstream of the block, so outside the film the line density follows the flux, plus a
-// line through each vortex core. The solver itself holds B = B_a on the film's surface (no stray field), so
+// field is sampled on a 3-D grid around the stack and traced (RK2) both ways from seeds spread evenly in flux
+// over a plane through the film, plus a line through each vortex core. The solver itself holds B = B_a on the film's surface (no stray field), so
 // outside the film this is the field its currents would make in free space.
 const lines = { on: false, paths: [], at: 0, key: '', segs: [] };
 function traceLines(o) {
@@ -1580,12 +1579,30 @@ function traceLines(o) {
     }
     src.push(cx / m, cy / m, cz / m, jx, jy, jz);
   }
+  // the cells grouped 2x2x2 into clusters; a cluster more than 12 nodes away counts as one element at its centre
+  const cl = new Map();
+  for (let q = 0; q < src.length; q += 6) {
+    const key = (src[q] >> 2) + 1000 * ((src[q + 1] >> 2) + 1000 * (src[q + 2] >> 2));
+    if (!cl.has(key)) cl.set(key, []); cl.get(key).push(q);
+  }
+  const S = [], CL = []; // S: cells reordered by cluster; CL: x, y, z, jx, jy, jz, first, end (into S)
+  for (const qs of cl.values()) {
+    const c0 = S.length, sum = [0, 0, 0, 0, 0, 0];
+    for (const q of qs) for (let n = 0; n < 6; n++) { S.push(src[q + n]); sum[n] += src[q + n]; }
+    CL.push(sum[0] / qs.length, sum[1] / qs.length, sum[2] / qs.length, sum[3], sum[4], sum[5], c0, S.length);
+  }
   const bs = (x, y, z, out) => { // Biot-Savart of the cells, in node units, softened over one node
     let bx = 0, by = 0, bz = 0;
-    for (let q = 0; q < src.length; q += 6) {
-      const rx = x - src[q], ry = y - src[q + 1], rz = z - src[q + 2], r2 = rx * rx + ry * ry + rz * rz + 1, w = 1 / (r2 * Math.sqrt(r2));
-      const jx = src[q + 3], jy = src[q + 4], jz = src[q + 5];
+    const add = (A, q) => {
+      const rx = x - A[q], ry = y - A[q + 1], rz = z - A[q + 2], r2 = rx * rx + ry * ry + rz * rz + 1, w = 1 / (r2 * Math.sqrt(r2));
+      const jx = A[q + 3], jy = A[q + 4], jz = A[q + 5];
       bx += (jy * rz - jz * ry) * w; by += (jz * rx - jx * rz) * w; bz += (jx * ry - jy * rx) * w;
+      return r2;
+    };
+    for (let p = 0; p < CL.length; p += 8) {
+      const rx = x - CL[p], ry = y - CL[p + 1], rz = z - CL[p + 2];
+      if (rx * rx + ry * ry + rz * rz > 144) add(CL, p);
+      else for (let q = CL[p + 6]; q < CL[p + 7]; q += 6) add(S, q);
     }
     out[0] = bx; out[1] = by; out[2] = bz;
   };
@@ -1599,13 +1616,42 @@ function traceLines(o) {
   // the grid: a fifth of the length past each end, 0.4 of the width past each side, 0.6 of its length deep
   const lo = [1 - 0.22 * nx, 1 - 0.4 * ny, 0], hi = [nx + 0.22 * nx, ny + 0.4 * ny, 0], zc = (nz + 1) / 2, hz = 0.3 * (hi[0] - lo[0]);
   lo[2] = zc - hz; hi[2] = zc + hz;
-  const sp = (hi[0] - lo[0]) / 35, N = [0, 1, 2].map(a => Math.round((hi[a] - lo[a]) / sp) + 1), G = new Float32Array(3 * N[0] * N[1] * N[2]);
-  for (let k = 0; k < N[2]; k++) for (let j = 0; j < N[1]; j++) for (let i = 0; i < N[0]; i++) {
-    bs(lo[0] + i * sp, lo[1] + j * sp, lo[2] + k * sp, t); const q = 3 * (i + N[0] * (j + N[1] * k));
-    G[q] = Ba[0] + c * t[0]; G[q + 1] = Ba[1] + c * t[1]; G[q + 2] = Ba[2] + c * t[2];
+  // sampled coarsely (35 points along the length) over the whole box and at every node in and just around the film,
+  // so that the screening within about lambda of the film's faces is not smeared out by the coarse grid
+  const grid = (lo, sp, N, skip) => {
+    const G = new Float32Array(3 * N[0] * N[1] * N[2]);
+    for (let k = 0; k < N[2]; k++) for (let j = 0; j < N[1]; j++) for (let i = 0; i < N[0]; i++) {
+      if (skip && skip(i, j, k)) continue;
+      bs(lo[0] + i * sp, lo[1] + j * sp, lo[2] + k * sp, t); const q = 3 * (i + N[0] * (j + N[1] * k));
+      G[q] = Ba[0] + c * t[0]; G[q + 1] = Ba[1] + c * t[1]; G[q + 2] = Ba[2] + c * t[2];
+    }
+    return { lo, sp, N, G, hi: [0, 1, 2].map(a => lo[a] + (N[a] - 1) * sp) };
+  };
+  const sp = (hi[0] - lo[0]) / 35, gC = grid(lo, sp, [0, 1, 2].map(a => Math.round((hi[a] - lo[a]) / sp) + 1));
+  const gF = grid([-2, -2, -2], 1, [nx + 6, ny + 6, nz + 6], (i, j, k) => i > 2 && i <= nx + 2 && j > 2 && j <= ny + 2 && k > 2 && k <= nz + 2);
+  // inside the block itself the field is the solver's own B = curl A (each component averaged over the plaquettes
+  // that meet at a node): the Biot-Savart cells are two nodes wide and would leak the crowded field at the edges
+  // into the film, putting lines through its edges that the solver screens
+  const pl = (I, J, K, d) => { // plaquette field normal to axis d at the cell whose low corner is node (I, J, K)
+    if (d === 2) return I < nx && J < ny ? f * (o.ax[at(I, J, K)] + o.ay[at(I + 1, J, K)] - o.ax[at(I, J + 1, K)] - o.ay[at(I, J, K)]) : null;
+    if (d === 0) return J < ny && K < nz ? f * (o.ay[at(I, J, K)] + o.az[at(I, J + 1, K)] - o.ay[at(I, J, K + 1)] - o.az[at(I, J, K)]) : null;
+    return I < nx && K < nz ? f * (o.az[at(I, J, K)] + o.ax[at(I, J, K + 1)] - o.az[at(I + 1, J, K)] - o.ax[at(I, J, K)]) : null;
+  };
+  for (let K = 1; K <= nz; K++) for (let J = 1; J <= ny; J++) for (let I = 1; I <= nx; I++) {
+    const q = 3 * (I + 2 + gF.N[0] * (J + 2 + gF.N[1] * (K + 2)));
+    for (let d = 0; d < 3; d++) {
+      let s = 0, m = 0;
+      for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) {
+        const P = [I, J, K], e1 = (d + 1) % 3, e2 = (d + 2) % 3; P[e1] -= a; P[e2] -= b;
+        if (P[e1] < 1 || P[e2] < 1) continue;
+        const v = pl(P[0], P[1], P[2], d); if (v !== null) { s += v; m++; }
+      }
+      if (m) gF.G[q + d] = s / m;
+    }
   }
   const Bat = (p, out) => {
-    const u = [0, 1, 2].map(a => Math.min(N[a] - 1.001, Math.max(0, (p[a] - lo[a]) / sp)));
+    const g = p[0] > gF.lo[0] && p[0] < gF.hi[0] && p[1] > gF.lo[1] && p[1] < gF.hi[1] && p[2] > gF.lo[2] && p[2] < gF.hi[2] ? gF : gC, { N, G } = g;
+    const u = [0, 1, 2].map(a => Math.min(N[a] - 1.001, Math.max(0, (p[a] - g.lo[a]) / g.sp)));
     const i = Math.floor(u[0]), j = Math.floor(u[1]), k = Math.floor(u[2]), a = u[0] - i, b = u[1] - j, cc = u[2] - k;
     out[0] = out[1] = out[2] = 0;
     for (let n = 0; n < 8; n++) {
@@ -1625,28 +1671,38 @@ function traceLines(o) {
     }
     return pts;
   };
-  // seeds: a staggered grid on the plane across B_a through the domain's centre, each pushed back along B_a to
-  // where it enters the domain, so every line runs the full way through
+  // one line through each vortex core on the top surface, traced both ways
+  const amp = (i, j) => { const q = at(i, j, nz); return Math.hypot(o.pr[q], o.pi[q]); };
+  const coreAt = [];
+  for (let j = 2; j < ny && coreAt.length < 24; j++) for (let i = 7; i <= nx - 6 && coreAt.length < 24; i++) {
+    const w = amp(i, j); if (w > 0.35 || w > amp(i - 1, j) || w > amp(i + 1, j) || w > amp(i, j - 1) || w > amp(i, j + 1)) continue;
+    const pts = trace([i, j, nz], -1).reverse().concat(trace([i, j, nz], 1).slice(1));
+    lines.paths.push({ pts, core: 1 }); coreAt.push(pts);
+  }
+  // the rest are seeded evenly in flux on the plane across B_a through the film's centre: a seed per equal share
+  // of |B.e| over the plane (error-diffused, so the seeds spread like a halftone), each traced both ways. Every
+  // line then carries the same flux, so lines only cross the film where the solver lets flux through (the edges
+  // within about lambda, and the cores) and the screened film stays clear; seeding evenly in area instead puts
+  // lines through the film even where it carries a few percent of B_a.
   const e = Ba.map(v => v / bm), ref = Math.abs(e[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
   const u = [e[1] * ref[2] - e[2] * ref[1], e[2] * ref[0] - e[0] * ref[2], e[0] * ref[1] - e[1] * ref[0]], un = Math.hypot(...u); u.forEach((v, a) => u[a] = v / un);
   const v = [e[1] * u[2] - e[2] * u[1], e[2] * u[0] - e[0] * u[2], e[0] * u[1] - e[1] * u[0]];
-  const C = [0, 1, 2].map(a => (lo[a] + hi[a]) / 2), R = 0.5 * Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]);
-  const ds = (hi[0] - lo[0]) / 10;
-  for (let a = -R; a <= R; a += ds) for (let b = -R, row = 0; b <= R; b += ds * 0.866, row++) {
-    const aa = a + (row & 1 ? ds / 2 : 0), s0 = [0, 1, 2].map(k => C[k] + aa * u[k] + b * v[k]);
-    let t0 = -Infinity, t1 = Infinity; // where the line s0 + s e enters and leaves the domain
-    for (let k = 0; k < 3; k++) { if (Math.abs(e[k]) < 1e-9) { if (s0[k] < lo[k] || s0[k] > hi[k]) { t0 = 1; t1 = 0; } continue; }
-      const q0 = (lo[k] - s0[k]) / e[k], q1 = (hi[k] - s0[k]) / e[k]; t0 = Math.max(t0, Math.min(q0, q1)); t1 = Math.min(t1, Math.max(q0, q1)); }
-    if (t1 - t0 < 0.2 * R) continue;
-    const pts = trace(s0.map((x, k) => x + (t0 + 0.01) * e[k]), 1);
-    if (pts.length > 4) lines.paths.push({ pts, core: 0 });
-  }
-  // and one through each vortex core on the top surface, traced both ways
-  const amp = (i, j) => { const q = at(i, j, nz); return Math.hypot(o.pr[q], o.pi[q]); };
-  let cores = 0;
-  for (let j = 2; j < ny && cores < 24; j++) for (let i = 7; i <= nx - 6 && cores < 24; i++) {
-    const w = amp(i, j); if (w > 0.35 || w > amp(i - 1, j) || w > amp(i + 1, j) || w > amp(i, j - 1) || w > amp(i, j + 1)) continue;
-    lines.paths.push({ pts: trace([i, j, nz], -1).reverse().concat(trace([i, j, nz], 1).slice(1)), core: 1 }); cores++;
+  const C = [(nx + 1) / 2, (ny + 1) / 2, zc], R = 0.5 * Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]);
+  const ds = (hi[0] - lo[0]) / 10, fs = ds / 4, M = Math.ceil(2 * R / fs) + 1, per = 16 * bm; // per = flux of one line, in (fine cell) x B
+  let err = new Float32Array(M + 2), nxt = new Float32Array(M + 2);
+  for (let jb = 0; jb < M; jb++) {
+    for (let k = 0; k < M; k++) {
+      const ia = jb & 1 ? M - 1 - k : k, s0 = [0, 1, 2].map(q => C[q] + (ia * fs - R) * u[q] + (jb * fs - R) * v[q]); // serpentine
+      let val = err[ia + 1];
+      if (inside(s0)) { Bat(s0, t); val += Math.abs(t[0] * e[0] + t[1] * e[1] + t[2] * e[2]) / per; }
+      const out = val >= 0.5 ? 1 : 0, d = val - out, f1 = jb & 1 ? -1 : 1; // Floyd-Steinberg
+      err[ia + 1 + f1] += 7 / 16 * d; nxt[ia + 1 - f1] += 3 / 16 * d; nxt[ia + 1] += 5 / 16 * d; nxt[ia + 1 + f1] += 1 / 16 * d;
+      if (!out || !inside(s0)) continue;
+      if (coreAt.some(pts => pts.some(q => Math.hypot(q[0] - s0[0], q[1] - s0[1], q[2] - s0[2]) < 2.5))) continue; // that flux is the core's line
+      const pts = trace(s0, -1).reverse().concat(trace(s0, 1).slice(1));
+      if (pts.length > 8) lines.paths.push({ pts, core: 0 });
+    }
+    [err, nxt] = [nxt, err]; nxt.fill(0);
   }
 }
 // |B| / B_a: blue where the film screens it, the ink colour at the applied field, red where it crowds
