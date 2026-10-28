@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.15.0 — 2026-10-28
+
+### Added
+
+- A **Photon event** preset in the live 3-D simulator. It loads a 5 nm × 98 nm × 472 nm NbN SNSPD wire at 0.92 I_dep, read out by 50 Ω through 50 nH, and fires a 1550 nm photon at the centre each time the wire has recovered. The wire switches, its hotspot grows to about 150 nm, the current moves to the load, the wire retraps about 85 ps after the photon, and the current returns with L/R = 1 ns
+- The wire is solved in the thin-film limit (no screening; its Pearl length is tens of µm against a 100 nm width), which lifts the screening equation's step limit, so dt goes from 0.017 τ to 0.1 τ. On the CPU reference this matches a 0.03 τ step to three digits. The GPU check also runs this mode through a switching photon
+- Series inductance up to 100 nH, and a 5 nm SNSPD wire size in the block menu (field controls off there)
+- A write-up of the CPU reference against the literature: detection threshold 0.90 I_dep at 1550 nm (Zotova & Vodolazov 2012: 0.90), hotspot growth, and retrap versus latching against Kerman 2009 and Annunziata 2010. The model latches only below L/R ≈ 10–25 ps, about ten times shorter than Kerman's NbN wires, and the page says so
+- The Windows WebGL check also runs the photon-event preset
+
+### Fixed
+
+- A one-layer film is drawn with its cell's thickness, rather than as a zero-thickness sheet that showed the oxide through it
+
 ## 2.14.5 — 2026-10-28
 
 ### Changed
