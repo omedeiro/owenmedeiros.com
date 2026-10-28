@@ -46,6 +46,9 @@ header { display: grid; gap: 8px; }
 .vkey .bar.ph { background: linear-gradient(90deg, #e6574d, #e6d84d, #5fe64d, #4de6dd, #4d63e6, #d94de6, #e6574d); }
 .vkey .ends { display: flex; justify-content: space-between; font-family: var(--mono); }
 .vkey .ends b { font-weight: 500; }
+.vkey.fkey { right: auto; left: 12px; }
+.vkey .fnote { font-size: 10.5px; line-height: 1.35; }
+@media (max-width: 560px) { .vkey.fkey { left: auto; right: 12px; top: 64px; } .vkey .fnote { display: none; } }
 .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 3px; border-radius: 10px; background: var(--bg); border: 1px solid var(--rule); }
 .seg button { border: 0; background: transparent; padding: 6px 4px; font-size: 13px; border-radius: 7px; }
 .seg button[aria-pressed="true"] { background: var(--panel); color: var(--fg); box-shadow: 0 1px 3px rgb(16 24 40 / .14); }
@@ -116,6 +119,7 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
         <div class="nogl" id="noGl" hidden></div>
         <span class="hint" id="hint">Drag to orbit · scroll or pinch to zoom · click the film to absorb a photon</span>
         <div class="vkey" id="ampKey"><span>|ψ|</span><i class="bar amp"></i><span class="ends"><b>0</b><b>1</b></span></div>
+        <div class="vkey fkey" id="fKey" hidden><span>field lines: |B| / applied B</span><i class="bar" id="fBar"></i><span class="ends" style="position:relative"><b>0</b><b style="position:absolute;left:66.7%;transform:translateX(-50%)">1</b><b>≥1.5</b></span><span class="fnote">blue: screened · red: crowded at edges<br>spacing: equal flux per line, denser = stronger<br>bold: through a vortex core</span></div>
         <div class="vkey" id="phKey" hidden><span>phase of ψ</span><i class="bar ph"></i><span class="ends"><b>−π</b><b>π</b></span></div>
       </div>
       <div class="panel trace">
@@ -1706,7 +1710,8 @@ function traceLines(o) {
   const v = [e[1] * u[2] - e[2] * u[1], e[2] * u[0] - e[0] * u[2], e[0] * u[1] - e[1] * u[0]];
   const C = [(nx + 1) / 2, (ny + 1) / 2, zc], R = 0.5 * Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]);
   const ds = (hi[0] - lo[0]) / 10, fs = ds / 4, M = Math.ceil(2 * R / fs) + 1, per = 16 * bm; // per = flux of one line, in (fine cell) x B
-  let err = new Float32Array(M + 2), nxt = new Float32Array(M + 2);
+  let err = new Float32Array(M + 2), nxt = new Float32Array(M + 2), rs = 0x9e3779b9;
+  const rnd = () => { rs = rs + 0x6d2b79f5 | 0; let x = Math.imul(rs ^ rs >>> 15, 1 | rs); x ^= x + Math.imul(x ^ x >>> 7, 61 | x); return ((x ^ x >>> 14) >>> 0) / 4294967296 - 0.5; };
   for (let jb = 0; jb < M; jb++) {
     for (let k = 0; k < M; k++) {
       const ia = jb & 1 ? M - 1 - k : k, s0 = [0, 1, 2].map(q => C[q] + (ia * fs - R) * u[q] + (jb * fs - R) * v[q]); // serpentine
@@ -1715,6 +1720,9 @@ function traceLines(o) {
       const out = val >= 0.5 ? 1 : 0, d = val - out, f1 = jb & 1 ? -1 : 1; // Floyd-Steinberg
       err[ia + 1 + f1] += 7 / 16 * d; nxt[ia + 1 - f1] += 3 / 16 * d; nxt[ia + 1] += 5 / 16 * d; nxt[ia + 1 + f1] += 1 / 16 * d;
       if (!out || !inside(s0)) continue;
+      // each seed moved at random within its cell (the same draw every time, so lines don't jump between traces):
+      // the halftone alone lays a uniform field out as a lattice, which reads as a grid rather than as a field
+      const ju = rnd() * fs, jv = rnd() * fs; for (let q = 0; q < 3; q++) s0[q] += ju * u[q] + jv * v[q];
       if (coreAt.some(pts => pts.some(q => Math.hypot(q[0] - s0[0], q[1] - s0[1], q[2] - s0[2]) < 2.5))) continue; // that flux is the core's line
       const pts = trace(s0, -1).reverse().concat(trace(s0, 1).slice(1));
       if (pts.length > 8) lines.paths.push({ pts, core: 0 });
@@ -1731,7 +1739,7 @@ function bCol(r, ink) {
 }
 function drawLines() {
   const c = $('flines'), r = canvas.getBoundingClientRect(), pr = canvas.parentElement.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
-  c.hidden = !lines.on; if (!lines.on) return;
+  c.hidden = !lines.on; $('fKey').hidden = !lines.on; if (!lines.on) return;
   const W = Math.round(r.width * dpr), Hh = Math.round(r.height * dpr), cam = view.camera(canvas);
   const key = [W, Hh, ...cam.eye.map(x => x.toFixed(4)), view.dark, lines.paths.length, lines.at].join();
   if (key === lines.key) return; // nothing moved
@@ -1739,7 +1747,9 @@ function drawLines() {
   Object.assign(c.style, { left: `${r.left - pr.left}px`, top: `${r.top - pr.top}px`, width: `${r.width}px`, height: `${r.height}px` });
   if (c.width !== W || c.height !== Hh) { c.width = W; c.height = Hh; }
   const ctx = c.getContext('2d'), sx = (sim.nx + 1) * H / 2, sy = (sim.ny + 1) * H / 2, sz = (sim.nz + 1) * H / 2;
-  const ink = view.dark ? [225, 230, 238] : [30, 34, 40], halo = view.colors.bg.map(v => Math.round(v * 255));
+  const ink = view.dark ? [225, 230, 238] : [30, 34, 40];
+  $('fBar').style.background = `linear-gradient(90deg, ${[0, 0.25, 0.5, 0.75, 1, 1.25, 1.5].map(r => bCol(r, ink)).join(', ')})`;
+  const halo = view.colors.bg.map(v => Math.round(v * 255));
   // the stack as one box (film, contacts, oxide and Si), for hiding what lies behind it
   const bl = [-(sim.nx - 1) * H / 2 - 7 * H, -(sim.ny - 1) * H / 2 - H / 2, -(sim.nz - 1) * H / 2 - 12 * H], bh = [-bl[0], -bl[1], (sim.nz - 1) * H / 2 + H];
   const hidden = w => { // is the eye's view of w blocked by the stack?
@@ -1771,11 +1781,13 @@ function drawLines() {
     const nn = l.pts.length, fadeAt = n => Math.min(1, n / (0.15 * nn), (nn - n) / (0.15 * nn)); // ends fade out, so the box the field was sampled in does not show
     ctx.lineWidth = wd + 1.8 * dpr; ctx.strokeStyle = hc;
     for (let n = 1; n < nn; n++) { const a = l.pts[n - 1], b = l.pts[n]; if (!a || !b || a.hid || b.hid) continue;
-      ctx.globalAlpha = 0.85 * fadeAt(n); ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke(); }
+      ctx.globalAlpha = 0.85 * fadeAt(n) * Math.min(1, Math.max(0, (0.5 * (a.r + b.r) - 0.04) / 0.26)); ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke(); }
     for (let n = 1; n < l.pts.length; n++) {
       const a = l.pts[n - 1], b = l.pts[n]; if (!a || !b) continue;
       const hid = a.hid && b.hid, fade = fadeAt(n);
-      ctx.globalAlpha = (hid ? 0.16 : 0.55 + 0.45 * near) * fade; ctx.lineWidth = hid ? 0.8 * wd : wd; ctx.strokeStyle = bCol(0.5 * (a.r + b.r), ink);
+      const rr = 0.5 * (a.r + b.r), weak = Math.min(1, Math.max(0, (rr - 0.04) / 0.26)); // fades out below ~30% of B_a, gone under 4%
+      if (!weak) continue;
+      ctx.globalAlpha = (hid ? 0.16 : 0.55 + 0.45 * near) * fade * weak; ctx.lineWidth = hid ? 0.8 * wd : wd; ctx.strokeStyle = bCol(0.5 * (a.r + b.r), ink);
       ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke();
     }
   }

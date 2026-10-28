@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.14.5 — 2026-10-28
+
+### Changed
+
+- The live simulator's field lines no longer sit on a visible grid: each line still carries the same flux (so lines crowd where the field is strong and thin out where the film screens it, the usual Faraday convention), but each seed now moves at random within its cell, with the same draw on every trace, so a uniform applied field reads as a field rather than a lattice
+- Field lines fade out where the field is weak, from 30% of the applied field down to nothing below 4%
+
+### Added
+
+- A legend for the field lines on the 3-D view: the colour is |B| over the applied field (blue screened, ink at the applied field, red crowded at the film's edges), the spacing is equal flux per line, and bold lines run through vortex cores
+
 ## 2.14.4 — 2026-10-28
 
 ### Fixed
