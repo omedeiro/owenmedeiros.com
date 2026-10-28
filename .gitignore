@@ -85,3 +85,6 @@ _build/
 
 # Habit fetch credentials (Strava / GitHub tokens)
 scripts/.env
+
+# screenshots from scripts/webgl-check
+webgl-*.png
