@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.13.4 — 2026-10-27
+## 2.14.2 — 2026-10-28
 
 ### Added
 
@@ -9,6 +9,44 @@
 ### Changed
 
 - The Nature Electronics memory-array entry in `references.bib` now carries its final volume, issue and pages (9(1), 69–77) instead of the online-first `1--9`
+
+## 2.14.1 — 2026-10-27
+
+### Changed
+
+- The live simulator's field lines are fully 3-D: the field (applied plus the film's own, by Biot–Savart from its supercurrent) is sampled on a grid around the stack and traced from seeds spread evenly across the applied field upstream of the block, so line density follows the flux, plus a line through each vortex core; drawn in depth order with background-coloured halos so crossings read in depth, wider and stronger when near, faint where the stack hides them, fading at their ends, coloured by |B| / B_a as before
+
+## 2.14.0 — 2026-10-27
+
+### Added
+
+- The live simulator has a **shunt resistor** (default 20 Ω) and a series inductance (default 2 nH): the bias splits between the block and the shunt, so a hotspot pushes its current into the shunt and the block can cool, as in a shunted detector; readouts show both currents, and the notes give the selection rules from the detector literature (shunt small next to the hotspot, L/R longer than the thermal recovery)
+
+### Changed
+
+- Field lines now follow the gallery's S/I/S figure: lines in the mid-plane, coloured by |B| / B_a, with the film's own field from its supercurrent (Biot–Savart, scaled to the solver's curl A inside the film), so they bend around screening and crowd through vortices
+- The 3-D view is sharp again: it grows to 0.75 of the device resolution (was 0.6) as soon as the GPU has headroom, and the ray march is back to its finer step
+## 2.13.5 — 2026-10-27
+
+### Added
+
+- The live simulator has a **Field lines** toggle (off by default): lines of B = curl A traced through the block from the solver's own vector potential and continued along the applied field outside it, with a bolder line through every vortex core
+
+### Changed
+
+- The live simulator starts at a quarter of its resolution and one solver step per frame, and only scales up while timed frames stay quick, so GPUs that time out (seen on Intel Arc under Direct3D 11) get a chance to run; if the GPU still drops the page, the 3-D view names the GPU
+
+### Fixed
+
+- A page whose WebGL context the browser has already taken away now says so, instead of reporting a missing EXT_color_buffer_float
+- The 3-D view's shader no longer indexes a uniform array by plane (Direct3D 11 expands that into a long branch chain inside the ray march) and reads the field glow's links directly, a likely cause of Chrome on Windows dropping the page
+
+## 2.13.4 — 2026-10-27
+
+### Fixed
+
+- The live simulator is lighter on weaker GPUs: it starts at a lower render resolution, takes at most 120 solver steps per frame, uses a shorter ray march, and drops resolution further if frames stay slow; after the GPU stops responding it restarts with half the step budget and a lower resolution, and remembers that on the device
+- When WebGL2 is unavailable, the 3-D view itself says so and shows the browser's own reason and whether WebGL1 works, and gives the Chrome steps to turn it back on (restart, graphics acceleration setting, chrome://gpu)
 
 ## 2.13.3 — 2026-10-26
 
