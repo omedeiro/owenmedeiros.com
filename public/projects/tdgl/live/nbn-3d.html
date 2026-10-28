@@ -1086,7 +1086,7 @@ float bnode(vec3 g){
 vec2 box(vec3 lo, vec3 hi, vec3 rd, out vec3 nrm){
   vec3 t0 = (lo - eye) / rd, t1 = (hi - eye) / rd, a = min(t0, t1), b = max(t0, t1);
   float tn = max(max(a.x, a.y), a.z), tf = min(min(b.x, b.y), b.z);
-  nrm = tn == a.x ? vec3(-sign(rd.x), 0, 0) : tn == a.y ? vec3(0, -sign(rd.y), 0) : vec3(0, 0, -sign(rd.z));
+  nrm = tn == a.x ? vec3(-sign(rd.x), 0., 0.) : tn == a.y ? vec3(0., -sign(rd.y), 0.) : vec3(0., 0., -sign(rd.z));
   return vec2(tn, tf); }
 // theta -> glow colour: deep red, orange, then pale yellow past Tc (theta = 1)
 vec3 heatCol(float t){ return mix(mix(vec3(.55, .05, .02), vec3(1., .45, .08), clamp(t * 1.4, 0., 1.)), vec3(1., .93, .6), clamp(t - .9, 0., 1.)); }
@@ -1119,7 +1119,7 @@ void main(){
   vec2 tL = box(vec3(lo.x - pad, lo.y - h * .5, lo.z - .01), vec3(lo.x - h * .5, hi.y + h * .5, hi.z + 1.5 * h), rd, nL);
   vec2 tR = box(vec3(hi.x + h * .5, lo.y - h * .5, lo.z - .01), vec3(hi.x + pad, hi.y + h * .5, hi.z + 1.5 * h), rd, nR);
   // nearest opaque surface: silicon or a contact
-  float tO = 1e9, mO = 0.; vec3 cO = cBg, nO = vec3(0, 0, 1), bLo = vec3(0.), bHi = vec3(0.);
+  float tO = 1e9, mO = 0.; vec3 cO = cBg, nO = vec3(0., 0., 1.), bLo = vec3(0.), bHi = vec3(0.);
   if (tS.y > max(tS.x, 0.) && tS.x < tO) { tO = tS.x; cO = cSi; nO = nS; mO = 0.; bLo = vec3(lo.x - pad, lo.y - h * .5, siBot); bHi = vec3(hi.x + pad, hi.y + h * .5, oxBot); }
   if (tL.y > max(tL.x, 0.) && tL.x < tO) { tO = tL.x; cO = cLead; nO = nL; mO = 1.; bLo = vec3(lo.x - pad, lo.y - h * .5, lo.z - .01); bHi = vec3(lo.x - h * .5, hi.y + h * .5, hi.z + 1.5 * h); }
   if (tR.y > max(tR.x, 0.) && tR.x < tO) { tO = tR.x; cO = cLead; nO = nR; mO = 1.; bLo = vec3(hi.x + h * .5, lo.y - h * .5, lo.z - .01); bHi = vec3(hi.x + pad, hi.y + h * .5, hi.z + 1.5 * h); }
@@ -1170,7 +1170,7 @@ void main(){
   }
   vec3 back;
   if (hit) {
-    vec3 g = (eye + rd * th) * toG + off, e = vec3(.5, 0, 0);
+    vec3 g = (eye + rd * th) * toG + off, e = vec3(.5, 0., 0.);
     vec3 nrm = normalize(vec3(amp(g + e.xyy) - amp(g - e.xyy), amp(g + e.yxy) - amp(g - e.yxy), amp(g + e.yyx) - amp(g - e.yyx)) + 1e-6);
     // key light from above, a soft sky term and a highlight, the same light as the opaque surfaces
     vec3 l = normalize(vec3(.4, .3, .85));
@@ -1215,7 +1215,7 @@ void main(){
     vec3 w0 = eye - vec3(beam.xy, 0.); float b = rd.z, d = dot(rd, w0), e = w0.z, den = max(1. - b * b, 1e-4);
     float tr = (b * e - d) / den, sl = (e - b * d) / den;
     if (tr > 0. && sl > hi.z && sl < hi.z + 30. * h && (!hit || tr < th)) {
-      float dist = length(w0 + rd * tr - vec3(0, 0, sl));
+      float dist = length(w0 + rd * tr - vec3(0., 0., sl));
       col = mix(col, cBeam, beam.w * exp(-dist * dist / (.25 * h * h)) * smoothstep(hi.z + 30. * h, hi.z, sl));
     }
   }
@@ -1291,6 +1291,18 @@ let gl = null;
 let glWhy = '';
 canvas.addEventListener('webglcontextcreationerror', e => { glWhy = e.statusMessage || ''; });
 try { gl = canvas.getContext('webgl2', { antialias: false }); } catch (e) { gl = null; glWhy = glWhy || String(e && e.message || e); }
+// On owenmedeiros.com, each load sends what happened (started, GPU check, errors, lost contexts, a heartbeat) to the
+// site's /api/sim-report, so failures on devices we cannot test show up without anyone sending a screenshot.
+// Anonymous: the browser's user-agent string, the GPU name, the page's own state; nothing typed or stored.
+const REPORT = /(^|\.)owenmedeiros\.com$/.test(location.hostname), RUN = Math.random().toString(36).slice(2, 10), sent = new Set();
+function report(stage, msg = '', extra = {}) {
+  if (!REPORT || sent.has(stage + msg) || sent.size > 20) return; sent.add(stage + msg);
+  let state = {}; try { state = { gpu: GPU, t: sim ? +sim.t.toFixed(1) : null, scale, perFrame, lost, size: $('szS').value }; } catch {} // (unset while the script is still loading)
+  const body = JSON.stringify({ run: RUN, page: location.pathname, stage, msg: String(msg).slice(0, 1000), ...state, ...extra });
+  try { navigator.sendBeacon('/api/sim-report', new Blob([body], { type: 'application/json' })); } catch {}
+}
+addEventListener('error', e => report('js-error', `${e.message} (${(e.filename || '').split('/').pop()}:${e.lineno}:${e.colno})`));
+addEventListener('unhandledrejection', e => report('js-error', String(e.reason && e.reason.message || e.reason)));
 
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 function rgb(c) {
@@ -1544,7 +1556,7 @@ function drawIV() {
 function gpuName() {
   try { const e = gl.getExtension('WEBGL_debug_renderer_info'); return gl.getParameter(e ? e.UNMASKED_RENDERER_WEBGL : gl.RENDERER); } catch { return 'unknown GPU'; }
 }
-function showErr(msg) { $('errBox').hidden = false; $('errBox').textContent = msg; }
+function showErr(msg) { $('errBox').hidden = false; $('errBox').textContent = msg; report('error', msg); }
 // after the first frames, look at the centre pixel the 3-D pass wrote: a lost context or a pass that drew nothing is reported
 let drawChecks = 0;
 function checkDraw() {
@@ -1900,13 +1912,15 @@ $('flowBtn').addEventListener('click', () => {
 });
 canvas.addEventListener('webglcontextlost', e => {
   e.preventDefault(); lost++; try { localStorage.setItem('nbn3dLost', lost); } catch {}
+  report('context-lost', '', { t: sim ? +sim.t.toFixed(1) : null });
   scale = Math.max(0.35, scale * 0.75); maxPF = Math.max(20, Math.round(maxPF * 0.5)); perFrame = Math.min(perFrame, 4);
   showErr(`The GPU stopped responding (WebGL context lost, ${GPU}); restarting at a lower resolution and fewer steps per frame…`);
   setTimeout(() => { if (!gl.isContextLost()) return;
     $('noGl').hidden = false; $('ampKey').hidden = true; $('hint').hidden = true;
     $('noGl').innerHTML = '<b>The GPU stopped responding and the browser has not given it back.</b>'
       + `<span>GPU: <b>${GPU || 'unknown'}</b>. Please send this line.</span>`
-      + '<span>Reload the page to try again; it now starts at a lower resolution and fewer solver steps on this device.</span>'; }, 3000);
+      + '<span>Reload the page to try again; it now starts at a lower resolution and fewer solver steps on this device.</span>';
+    report('context-not-restored'); }, 3000);
 });
 canvas.addEventListener('webglcontextrestored', () => { try { sim = null; build(); setSkin(); $('errBox').hidden = true; } catch (e) { showErr(String(e && e.message || e)); } });
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeColors); } catch {}
@@ -1930,13 +1944,16 @@ if (!gl) {
     + '<span>Chrome supports it, but switches it off when graphics acceleration is off, or for a while after the GPU crashed on a page.</span>'
     + '<span>What the browser reports: <b>' + (glWhy || 'no reason given') + '</b>; WebGL1 on this page: <b>' + (() => { try { return document.createElement('canvas').getContext('webgl') ? 'works' : 'also off'; } catch { return 'also off'; } })() + '</b>.</span>'
     + '<span>1. Quit Chrome completely and reopen it.<br>2. Settings → System → turn on <b>Use graphics acceleration when available</b>, then Relaunch.<br>3. Open <b>chrome://gpu</b>: WebGL2 should say <i>Hardware accelerated</i>.</span>';
+  report('no-webgl2', glWhy || 'no reason given', { webgl1: !!(() => { try { return document.createElement('canvas').getContext('webgl'); } catch { return null; } })() });
 }
 else {
   try {
     GPU = gpuName(); build(); setSkin();
     requestAnimationFrame(loop);
-    setTimeout(() => { try { $('checkNote').textContent = `GPU check: after 300 steps with a current, a tilted field, a photon and the oxide, this GPU's ψ and temperatures match the double-precision reference (which matches tdgl3d to round-off) to ${check().toExponential(1)} (${gpuName()}).`; } catch (e) { $('checkNote').textContent = 'GPU check could not run: ' + e.message; } }, 1500);
-  } catch (e) { $('errBox').hidden = false; $('errBox').textContent = String(e && e.message || e); }
+    report('started');
+    setTimeout(() => { try { const err = check(); $('checkNote').textContent = `GPU check: after 300 steps with a current, a tilted field, a photon and the oxide, this GPU's ψ and temperatures match the double-precision reference (which matches tdgl3d to round-off) to ${err.toExponential(1)} (${gpuName()}).`; report(err < 1e-3 ? 'check-ok' : 'check-mismatch', err.toExponential(1)); } catch (e) { $('checkNote').textContent = 'GPU check could not run: ' + e.message; report('check-failed', e.message); } }, 1500);
+    setTimeout(() => report('running-20s'), 20000); // a heartbeat: reached only if the page kept going
+  } catch (e) { $('errBox').hidden = false; $('errBox').textContent = String(e && e.message || e); report('start-failed', String(e && e.message || e)); }
 }
 
 </script>

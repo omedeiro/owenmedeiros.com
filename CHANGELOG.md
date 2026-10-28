@@ -4,6 +4,12 @@
 
 ### Fixed
 
+- The live simulator runs on Windows Chrome again: Direct3D 11 (through ANGLE) could not compile the 3-D view's shader (`error X3067: 'vec3_ctor_int_int': ambiguous function call`, from vector constructors mixing int and float literals), so the GPU context was lost on load. Every constructor now uses float literals
+- On owenmedeiros.com the page reports what happened on each load (started, GPU check result, errors, lost GPU contexts, a heartbeat after 20 s) to `/api/sim-report` with `sendBeacon`, anonymously (browser and GPU strings plus the page's own state)
+
+### Added
+
+- `.github/workflows/webgl-windows.yml` and `scripts/webgl-check/check.mjs`: on each change to the live simulator, Chrome on a Windows runner loads both the branch's copy and the deployed page with four ANGLE backends (default, D3D11, D3D11 WARP, SwiftShader), fails on any error, lost context, stalled solver or failed GPU check, and on failure prints ANGLE's shader-compiler log
 - The live simulator's field lines respect the film's Meissner screening: lines are now seeded evenly in flux on a plane through the film (each line carries the same flux) instead of evenly in area upstream, and inside the block the traced field is the solver's own B = curl A at every node instead of the coarse Biot–Savart estimate, which leaked the crowded edge field into the film. Lines now drape around the screened film and cross it only through vortex cores and the outer λ of its edges, where the solver lets flux in
 
 ## 2.14.2 — 2026-10-28
