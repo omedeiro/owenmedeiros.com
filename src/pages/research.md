@@ -33,7 +33,11 @@ Over the past two decades, superconducting nanowire single photon detectors have
 
 1. **[A scalable superconducting nanowire memory array with row–column addressing](https://doi.org/10.1038/s41928-025-01512-0)**
    <span class="pub-venue">Nature Electronics, 9, 69–77 (2026)</span>
-2. **[Reconfigurable Superconducting Logic for On-Chip Photon Coincidence Detection](https://arxiv.org/abs/2604.22101)**
+2. **[Fast-Recovery Epitaxial NbN Superconducting Nanowire Single-Photon Detectors with Saturated Efficiency at 1550 nm in Liquid Helium](https://doi.org/10.1021/acs.nanolett.6c00261)**
+   <span class="pub-venue">Nano Letters, 26(21), 6848–6856 (2026)</span>
+3. **[Ab initio modeling of superconducting devices](https://spie.org/Publications/Proceedings/Volume/PC14019)**
+   <span class="pub-venue">Advanced Photon Counting Techniques XX, PC1401908 (2026)</span>
+4. **[Reconfigurable Superconducting Logic for On-Chip Photon Coincidence Detection](https://arxiv.org/abs/2604.22101)**
    <span class="pub-venue">arXiv preprint arXiv:2604.22101 (2026)</span>
 
 ### 2025
