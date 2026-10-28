@@ -24,6 +24,24 @@ const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath
 const log = (...a) => console.log(`[${backend}${url ? ' live' : ''}]`, ...a);
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+  // name the program behind any draw that loses the context: each draw is followed by getError (a sync point)
+  await page.addInitScript(() => {
+    const P = WebGL2RenderingContext.prototype, src = new WeakMap(), att = new WeakMap(); let cur = null, n = 0;
+    const ss = P.shaderSource; P.shaderSource = function (sh, s) { src.set(sh, s); return ss.call(this, sh, s); };
+    const as = P.attachShader; P.attachShader = function (p, sh) { if (this.getShaderParameter(sh, this.SHADER_TYPE) === this.FRAGMENT_SHADER) att.set(p, src.get(sh)); return as.call(this, p, sh); };
+    const up = P.useProgram; P.useProgram = function (p) { cur = p; return up.call(this, p); };
+    for (const f of ['drawArrays', 'drawElements']) {
+      const d = P[f]; P[f] = function (...a) {
+        const r = d.apply(this, a); n++;
+        if (!window.__glBad && (this.getError() || this.isContextLost())) {
+          const s = (cur && att.get(cur)) || '';
+          window.__glBad = { draw: n, lost: this.isContextLost(), outs: (s.match(/layout\s*\(\s*location[^;]*out[^;]*;/g) || []).join(' '), head: s.replace(/\s+/g, ' ').slice(0, 1500) };
+          console.error('first failing draw #' + n + ': ' + JSON.stringify(window.__glBad));
+        }
+        return r;
+      };
+    }
+  });
   page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') log('console.' + m.type() + ':', m.text()); });
   page.on('pageerror', e => { log('pageerror:', e.message); problems.push('page error: ' + e.message); });
   page.on('crash', () => { log('PAGE CRASHED'); problems.push('page crashed'); });
