@@ -17,8 +17,8 @@ import Base from "../layouts/Base.astro";
   </p>
   <p>
     This site collects my <a href="/research">research and publications</a>,
-    <a href="/projects">technical projects</a> — spanning IoT sensor networks,
-    physics simulation, data analysis, and VR development — and some
+    <a href="/projects">technical projects</a> — spanning superconducting
+    device simulation, IoT sensor networks, data analysis, and VR development — and some
     <a href="/maths">mathematical visualizations</a>.
   </p>
   <h2>Selected work</h2>
@@ -29,16 +29,26 @@ import Base from "../layouts/Base.astro";
       (2026)</span>
     </li>
     <li>
-      <a href="/projects/soil-moisture">Soil moisture monitoring system</a> —
-      distributed ESP8266 sensor network with InfluxDB and Grafana
+      <a href="/research">A superconducting full-wave bridge rectifier</a> —
+      <span class="pub-venue">Nature Electronics (2025)</span>
     </li>
     <li>
-      <a href="/projects/tdgl-simulation">TDGL simulation</a> — vortex dynamics
-      in type-II superconductors
+      <a href="/projects/tdgl-simulation">TDGL simulation</a> — tdgl3d, a fully
+      3-D simulator for superconducting devices and circuits
+    </li>
+    <li>
+      <a href="/projects/soil-moisture">Soil moisture monitoring system</a> —
+      distributed ESP8266 sensor network with InfluxDB and Grafana
     </li>
   </ul>
   <h2>Live apps</h2>
   <ul>
+    <li>
+      <a href="/projects/tdgl/live/nbn-3d.html">Live NbN simulator</a> — a 3-D
+      NbN detector block with bias current, field, heat and photon absorption,
+      solved on your GPU in the browser (needs WebGL2). Part of the
+      <a href="/projects/tdgl-simulation">TDGL simulation</a> project
+    </li>
     <li>
       <a href="https://grafana.owenmedeiros.com">grafana.owenmedeiros.com</a> —
       live dashboards for the <a href="/projects/soil-moisture">soil moisture
