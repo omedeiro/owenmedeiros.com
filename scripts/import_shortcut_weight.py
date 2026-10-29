@@ -78,28 +78,68 @@ def to_lb(value: float, unit: str) -> float | None:
     return None
 
 
+# Shortcuts' default rendering of a date variable: "Oct 28, 2026 at 2:34 PM",
+# with a narrow no-break space before PM on recent iOS. Local time, no offset.
+DISPLAY_FORMATS = (
+    "%b %d, %Y at %I:%M %p",
+    "%b %d, %Y at %I:%M:%S %p",
+    "%B %d, %Y at %I:%M %p",
+    "%b %d, %Y, %I:%M %p",
+)
+
+
+def _normalise(text: str) -> str:
+    return text.replace("\u202f", " ").replace("\u00a0", " ").replace("\t", ",")
+
+
+def parse_when(raw: str) -> dt.datetime | dt.date | None:
+    raw = raw.strip()
+    when = parse_stamp(raw)
+    if when is not None:
+        return when
+    for fmt in DISPLAY_FORMATS:
+        try:
+            return dt.datetime.strptime(raw, fmt)
+        except ValueError:
+            continue
+    try:
+        return dt.date.fromisoformat(raw)
+    except ValueError:
+        return None
+
+
+def _is_unit(text: str) -> bool:
+    return bool(text.strip()) and to_lb(1.0, text) is not None and not NUMBER.fullmatch(text.strip())
+
+
 def parse_line(line: str) -> tuple[dt.datetime | dt.date, float] | None:
-    """Read one ``when,value[,unit]`` line into (when, pounds), or None."""
-    line = line.strip().lstrip("﻿")
+    """Read one ``when,value[,unit]`` line into (when, pounds), or None.
+
+    Split from the right, because the display form of a date carries a comma
+    of its own ("Oct 28, 2026 at 2:34 PM").
+    """
+    line = _normalise(line).strip().lstrip("\ufeff")
     if not line or line.startswith("#"):
         return None
-    parts = [p.strip() for p in line.replace("\t", ",").split(",")]
-    if len(parts) < 2:
-        # Typically a bare value with no date -- what arrives when the Text
-        # action holds only the sample's Value. Undatable, so unparsed.
+    parts = [p.strip() for p in line.rsplit(",", 2)]
+    if len(parts) == 3 and _is_unit(parts[2]):
+        stamp, value, unit = parts
+    else:
+        parts = [p.strip() for p in line.rsplit(",", 1)]
+        if len(parts) < 2:
+            # Typically a bare value with no date -- what arrives when the Text
+            # action holds only the sample's Value. Undatable, so unparsed.
+            return None
+        (stamp, value), unit = parts, ""
+
+    when = parse_when(stamp)
+    if when is None:
         return None
 
-    when: dt.datetime | dt.date | None = parse_stamp(parts[0])
-    if when is None:
-        try:
-            when = dt.date.fromisoformat(parts[0])
-        except ValueError:
-            return None
-
-    found = NUMBER.fullmatch(parts[1])
+    found = NUMBER.fullmatch(value)
     if not found:
         return None
-    unit = found.group(2) or (parts[2] if len(parts) > 2 else "")
+    unit = found.group(2) or unit
     pounds = to_lb(float(found.group(1)), unit)
     if pounds is None or not MIN_LB <= pounds <= MAX_LB:
         return None
@@ -126,7 +166,7 @@ def _lines_from_json(decoded: object, unit: str = "", _depth: int = 0) -> list[s
                 return _lines_from_json(json.loads(stripped), unit, _depth + 1)
             except ValueError:
                 pass
-        return [part for line in decoded.splitlines() for part in line.split(";")]
+        return _split_text(decoded)
 
     if isinstance(decoded, list):
         return [ln for item in decoded for ln in _lines_from_json(item, unit, _depth + 1)]
@@ -155,6 +195,37 @@ def _lines_from_json(decoded: object, unit: str = "", _depth: int = 0) -> list[s
     return [f"{when},{value},{_pick(decoded, _UNIT_KEYS) or unit}"]
 
 
+def unzip_columns(text: str) -> list[str] | None:
+    """Rebuild rows from three lists dropped whole into one Text action.
+
+    Without a Repeat, ``Start Date,Value,Unit`` over N samples renders each
+    variable as its own newline-joined list, so the text arrives as N dates,
+    then N values, then N units, with a comma only where one list meets the
+    next. That is 3N - 2 lines, the N-th holding ``date,value`` and the
+    (2N-1)-th ``value,unit``. Every piece is checked before it is trusted, so
+    anything else falls through to being read line by line.
+    """
+    lines = [ln.strip() for ln in _normalise(text).strip().splitlines() if ln.strip()]
+    if len(lines) < 4 or (len(lines) + 2) % 3:
+        return None
+    n = (len(lines) + 2) // 3
+    head, mid = lines[n - 1].rsplit(",", 1), lines[2 * n - 2].split(",", 1)
+    if len(head) != 2 or len(mid) != 2:
+        return None
+    dates = lines[: n - 1] + [head[0]]
+    values = [head[1]] + lines[n : 2 * n - 2] + [mid[0]]
+    units = [mid[1]] + lines[2 * n - 1 :]
+    if not all(NUMBER.fullmatch(v.strip()) for v in values):
+        return None
+    if not all(_is_unit(u) for u in units) or not all(parse_when(d) for d in dates):
+        return None
+    return [f"{d},{v.strip()},{u.strip()}" for d, v, u in zip(dates, values, units)]
+
+
+def _split_text(text: str) -> list[str]:
+    return unzip_columns(text) or [part for line in text.splitlines() for part in line.split(";")]
+
+
 def split_lines(body: str) -> list[str]:
     stripped = body.strip()
     if stripped[:1] in "[{":
@@ -162,7 +233,7 @@ def split_lines(body: str) -> list[str]:
             return _lines_from_json(json.loads(stripped))
         except ValueError:
             pass
-    return [part for line in body.splitlines() for part in line.split(";")]
+    return _split_text(body)
 
 
 def build_days(readings: list[tuple[dt.datetime | dt.date, float]]) -> dict[str, dict]:
