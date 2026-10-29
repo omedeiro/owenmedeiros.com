@@ -74,8 +74,13 @@ try {
   const box = await page.locator('#view').boundingBox();
   if (box) await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
   await page.waitForTimeout(10000);
+  log('after photon', JSON.stringify(await probe()));
+  // the photon-event preset (the thin-film SNSPD wire, its own solver mode), where the page has it
+  const hasPh = await page.evaluate(() => { const b = document.getElementById('photonBtn'); if (b) b.click(); return !!b; });
+  if (hasPh) { await page.evaluate(() => { nextShot = 0; }); await page.waitForTimeout(15000);
+    log('photon event', JSON.stringify(await page.evaluate(() => ({ size: [sim.nx, sim.ny, sim.nz], frozen: sim.frozen, t: +sim.t.toFixed(1), state: document.getElementById('rState').textContent, Tf: document.getElementById('rTf').textContent })))); }
   const end = await probe();
-  log('after photon', JSON.stringify(end));
+  log('end', JSON.stringify(end));
   if (end.noGl) problems.push('no-WebGL overlay: ' + end.noGl);
   if (end.err) problems.push('error box: ' + end.err);
   if (end.lost) problems.push('WebGL context lost');
