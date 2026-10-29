@@ -85,6 +85,8 @@ def parse_line(line: str) -> tuple[dt.datetime | dt.date, float] | None:
         return None
     parts = [p.strip() for p in line.replace("\t", ",").split(",")]
     if len(parts) < 2:
+        # Typically a bare value with no date -- what arrives when the Text
+        # action holds only the sample's Value. Undatable, so unparsed.
         return None
 
     when: dt.datetime | dt.date | None = parse_stamp(parts[0])
@@ -139,13 +141,17 @@ def _lines_from_json(decoded: object, unit: str = "", _depth: int = 0) -> list[s
             if isinstance(metric, dict) and "weight" in str(metric.get("name", "")).casefold():
                 lines += _lines_from_json(metric.get("data") or [], str(metric.get("units", "")), _depth + 1)
         return lines
-    for key in ("weights", "weight", "samples", "data"):
+    # "sessions" because the first Shortcut built for this was a copy of the
+    # Bend one, and kept its body key.
+    for key in ("weights", "weight", "samples", "sessions", "data"):
         if key in decoded and isinstance(decoded[key], (str, list, dict)):
             return _lines_from_json(decoded[key], unit, _depth + 1)
 
     when, value = _pick(decoded, _STAMP_KEYS), _pick(decoded, _VALUE_KEYS)
     if not when or not value:
-        return []
+        # Returned as a line rather than dropped, so it is counted as unparsed:
+        # an object we cannot read must fail the run, not pass as an empty week.
+        return [json.dumps(decoded)] if decoded else []
     return [f"{when},{value},{_pick(decoded, _UNIT_KEYS) or unit}"]
 
 
