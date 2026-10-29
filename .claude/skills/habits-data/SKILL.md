@@ -20,6 +20,7 @@ skill covers what is expensive to rediscover.
 | Screen time | `fetch_screentime.py` | **Mac only** — LaunchAgent, daily 23:00 |
 | Sleep | `import_shortcut_sleep.py` | **Mac only** — LaunchAgent, from an iCloud Drive drop |
 | Stretching | `import_shortcut_stretching.py --payload-file` | **CI**, on a `repository_dispatch` from the phone |
+| Weight | `import_shortcut_weight.py --payload-file` | **CI**, on a `weight` `repository_dispatch` from the phone (Withings → Health → Shortcut) |
 | Stretching | `import_shortcut_stretching.py` | **Mac only** — LaunchAgent fallback, from an iCloud Drive drop |
 | Stretching, Sleep | `import_health.py` | **Mac only** — manual, after a Health export |
 
