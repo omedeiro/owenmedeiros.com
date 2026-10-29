@@ -81,6 +81,7 @@ habits only move if the phone or the Mac pushes them.
 | Push-ups | `scripts/fetch_strava.py` | nightly, automatic |
 | Commits | `scripts/fetch_github.py` | nightly, automatic |
 | Stretching | `scripts/import_shortcut_stretching.py --payload-file` | daily, automatic — the phone POSTs a `repository_dispatch` |
+| Weight | `scripts/import_shortcut_weight.py --payload-file` | automatic — the phone POSTs a `repository_dispatch` of type `weight`; see `docs/withings-weight-shortcut.md` |
 | Screen time | `scripts/fetch_screentime.py` | LaunchAgent, daily on the Mac |
 | Sleep | `scripts/import_shortcut_sleep.py` | LaunchAgent, daily from an iCloud Drive drop |
 | Stretching | `scripts/import_shortcut_stretching.py` | LaunchAgent fallback, from the same kind of drop |

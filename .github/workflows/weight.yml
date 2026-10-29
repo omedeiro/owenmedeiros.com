@@ -1,0 +1,100 @@
+name: Ingest weight
+
+# The Withings scale uploads over Wi-Fi, the Withings app writes each reading
+# into Apple Health, and -- as with stretching -- Health goes no further on its
+# own. An iOS Shortcut reads the recent Weight samples and POSTs them here as a
+# repository_dispatch; this job merges them into src/data/habits/weight.json and
+# the commit triggers the usual Cloudflare deploy.
+#
+# See docs/withings-weight-shortcut.md for the phone side. Structurally this is
+# stretching.yml with a different importer; see the comments there.
+
+on:
+  repository_dispatch:
+    types: [weight]
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: "Reading lines: 'timestamp,value[,unit]' or 'YYYY-MM-DD,value', one per line"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+# Shared with the nightly refresh: both commit src/data/habits and push to main,
+# and queueing them is cheaper than resolving a race afterwards.
+concurrency:
+  group: habits-refresh
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    env:
+      # Load-bearing, as in stretching.yml: a reading is filed under its local
+      # date, and on a UTC runner a 21:00 weigh-in lands on the following day.
+      TZ: America/New_York
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Via the environment, never interpolated into the script body: the
+      # payload is attacker-controlled as far as this runner is concerned.
+      - name: Assemble payload
+        env:
+          DISPATCH: ${{ toJSON(github.event.client_payload) }}
+          MANUAL: ${{ inputs.payload }}
+        run: |
+          if [ -n "$DISPATCH" ] && [ "$DISPATCH" != "null" ]; then
+            printf '%s' "$DISPATCH" > "$RUNNER_TEMP/weight.json"
+          else
+            printf '%s\n' "$MANUAL" > "$RUNNER_TEMP/weight.json"
+          fi
+          echo "Payload is $(wc -c < "$RUNNER_TEMP/weight.json") bytes. First 400:"
+          # Printed because the shape of what the phone sends is the one thing
+          # that cannot be checked from a laptop, and a run that parses nothing
+          # is otherwise indistinguishable from a run that received nothing.
+          # No new exposure: the same readings get committed to weight.json.
+          head -c 400 "$RUNNER_TEMP/weight.json"; echo
+
+      # No pip install: standard library only. --empty-ok so a window with no
+      # weigh-ins is a green run, while lines that all fail to parse still fail.
+      - name: Merge readings into weight.json
+        run: |
+          python scripts/import_shortcut_weight.py \
+            --payload-file "$RUNNER_TEMP/weight.json" --empty-ok
+
+      - name: Commit changed data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A src/data/habits
+
+          # Every run rewrites `updated_at`, so a naive diff check would commit
+          # (and redeploy the site) on every push from the phone even when it
+          # re-sent a window that had not changed. Only commit a real day.
+          REAL_CHANGES=$(git diff --cached -U0 -- src/data/habits \
+            | grep -E '^[+-]' \
+            | grep -vE '^(\+\+\+|---)' \
+            | grep -v '"updated_at"' || true)
+
+          if [ -z "$REAL_CHANGES" ]; then
+            echo "Nothing new in this window; skipping commit."
+            git reset
+            exit 0
+          fi
+
+          git commit -m "Update weight data"
+
+          # The concurrency group makes a race unlikely rather than impossible
+          # -- a manual dispatch can still collide with the nightly refresh.
+          for attempt in 1 2 3; do
+            if git push; then exit 0; fi
+            echo "Push rejected (attempt $attempt); rebasing onto origin/main."
+            git pull --rebase --autostash origin main || break
+          done
+          git push
