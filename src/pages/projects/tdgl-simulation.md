@@ -27,7 +27,7 @@ $$
 
 **[Run it live in your browser →](/projects/tdgl/live/nbn-3d.html)** A 3-D NbN
 detector block on SiO₂/Si with bias current, field, heat, photon absorption and a
-ramped I–V curve, solved on your GPU (more [below](#a-detector-block-you-can-run)).
+quasi-static I–V curve, solved on your GPU (more [below](#a-detector-block-you-can-run)).
 
 Everything is dimensionless: lengths in coherence lengths ξ, fields in $B_{c2}$.
 Three numbers fix the normalisation — $\Phi_0 = 2\pi$, $\lambda = \kappa$ (in ξ),
@@ -281,22 +281,28 @@ field, and the heat equation in the film and the oxide. Drag to orbit it, set th
 field and penetration depth, and click the film to absorb a photon. The film is
 coloured by the order parameter |ψ| or its phase, so vortices show as dark spots
 or as points where the phase colours wind. Traces show the
-current, voltage and peak temperature, and a ramp mode sweeps the bias from positive to negative to draw
-the full I–V curve, waiting at zero until the block is cold again. The page checks its GPU against a double-precision reference that matches
+current, voltage and peak temperature, and a sweep mode steps the bias from positive to negative,
+holding each current until the voltage and temperature settle, to draw the full I–V curve
+with its switching and retrapping currents, each checked against a closed form. The page checks its GPU against a double-precision reference that matches
 tdgl3d to round-off before it runs.
 
-The I–V shows why thick wires latch. The block switches near the depairing current
-straight onto its normal-state line, about 114 Ω across the probes for 39 nm, and then
-its own Joule heat holds it far above T<sub>c</sub>. Heat leaves only through the oxide,
-and a 39 nm block takes about 280 ps to shed it against about 50 ps for a 5 nm film, so
-it stays normal until the current is nearly gone.
+The *Reference I–V* button draws the hysteretic curve real nanowires show. The 20 nm
+block at 4.2 K stays at zero voltage up to 0.83 of the depairing current, switches
+straight onto its normal-state line, comes back down it while its own Joule heat holds
+it above T<sub>c</sub>, and drops back to zero at 0.25: the hotspot current, where the
+heat the oxide can carry away no longer keeps a normal domain alive. Against closed
+forms, switching sits 17 % below the Ginzburg–Landau depairing current (heat made at the
+contacts before it switches, plus the short λ crowding current to the edges) and
+retrapping 11 % above the Skocpol–Beasley–Tinkham hotspot current worked out for this
+wire. The ratio, 0.30, is close to the 0.22–0.28 measured on 5 nm NbN wires at 4.2 K.
+A bath-temperature slider moves both down toward T<sub>c</sub>.
 
 Vortices alone do not latch it. The Flux flow preset puts the 20 nm block in
 0.5 H<sub>c2</sub> at a fifth of the depairing current: about ten vortices stream across
 and are replaced as they leave, the flux-flow voltage settles near a tenth of the normal
 value, and the film stays below about 5 K because the oxide carries that small,
 spread-out dissipation away. A little more bias or field and the vortices merge into a
-self-heated normal state, which is the runaway the ramp shows. A switch turns the Joule
+self-heated normal state, which is the runaway the I–V shows. A switch turns the Joule
 heating off for the isothermal flow of the 2-D demos.
 
 <figure>

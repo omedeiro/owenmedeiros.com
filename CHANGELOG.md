@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.17.0 — 2026-10-28
+
+### Fixed
+
+- The live simulator's I–V curve is a real DC curve. The old ramp swept the bias in tens of picoseconds while the block takes about 500 ps to settle on its normal branch, so the curve was a thermal lag: it overshot on the way up and never showed a retrapping current. The sweep now steps the current and holds each point until two 20 τ windows agree on the voltage and the peak temperature, drawing only settled points. While sweeping, the heat equations run up to 16 times faster (diffusion, Joule heating and the escape to the silicon scaled together), which leaves every steady state unchanged. The shunt is bypassed during a sweep
+
+### Added
+
+- *Reference I–V* button: the 20 nm block at 4.2 K, no field, no shunt, swept to 1.2 I<sub>dep</sub> in steps of 0.02. On the CPU reference it switches at 0.83 ± 0.01 I<sub>dep</sub> onto the normal line and retraps at 0.25 ± 0.01
+- Switching and retrapping currents for both signs, each ± half a step, with their errors against closed forms for the block at the bath temperature: GL depairing (Clem and Kogan Eq. 42) for switching, and the Skocpol–Beasley–Tinkham hotspot current for this wire (finite length, leads at the bath, the solver's own film → SiO₂ → Si conductance, normal where the current exceeds depairing at the local temperature) for retrapping. Reference lines for both on the I–V plot
+- Bath temperature slider, 4.2 K to 9.6 K: a uniform offset of θ in the Ginzburg–Landau term (exact, since the heat equations are linear in θ); temperature readouts and traces follow it
+- Notes on the sweep, the detection, the closed forms and the CPU reference numbers (4.2 K: switching −17 % against GL, of which 4.5 % with heating off; retrapping +11 % against SBT; 6.5 K: −7.5 % and +8 %; I<sub>r</sub>/I<sub>sw</sub> = 0.30 against 0.22–0.28 measured on 5 nm NbN wires by Charaev et al. 2017)
+
 ## 2.16.0 — 2026-10-28
 
 ### Added
