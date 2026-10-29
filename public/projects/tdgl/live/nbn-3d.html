@@ -135,6 +135,7 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
           <dt>Switching current</dt><dd id="rIsw">–</dd>
           <dt>Retrapping current</dt><dd id="rIre">–</dd>
           <dt>Normal-state resistance</dt><dd id="rRn">–</dd>
+          <dt>Diode efficiency η</dt><dd id="rEta">–</dd>
         </dl>
       </div>
     </div>
@@ -152,7 +153,8 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
       <p class="sub" id="thinNote" hidden>The 5 nm wire is solved in the thin-film limit: its Pearl length (2λ²/d, tens of µm for NbN) dwarfs the 100 nm width, so it does not screen, and the field controls are off.</p>
       <div class="ctl"><label for="bS">Field B <b id="bV"></b></label><input id="bS" type="range" min="0" max="0.6" step="0.01" value="0"></div>
       <div class="ctl"><label for="tS">Field tilt from z <b id="tV"></b></label><input id="tS" type="range" min="0" max="90" step="1" value="0"></div>
-      <div class="row"><button id="linesBtn" type="button" aria-pressed="false">Field lines</button></div>
+      <div class="row"><button id="linesBtn" type="button" aria-pressed="false">Field lines</button><button id="notchBtn" type="button" aria-pressed="false">Notch</button></div>
+      <span class="sub" id="notchSub">Cut a notch through the whole thickness of one edge, centred along the length. With a field it makes the block a superconducting diode: at 0.2 H<sub>c2</sub>, Ramp I–V switches near 0.7 I<sub>dep</sub> one way and 0.5 I<sub>dep</sub> the other.</span>
       <div class="ctl"><label for="skS">Film shows</label>
         <select id="skS"><option value="1" selected>|ψ|, the order parameter</option><option value="2">Phase of ψ</option><option value="0">Vortex tubes inside</option></select></div>
       <div class="ctl" id="isoBox" hidden><label for="iS">Tube surface at |ψ| / bulk = <b id="iV"></b></label><input id="iS" type="range" min="0.2" max="0.8" step="0.01" value="0.5"></div>
@@ -213,6 +215,7 @@ canvas#cIV { width: 100%; height: 200px; display: block; }
     <p>Vortices without latching: the <b>Flux flow</b> button puts the 20 nm block in 0.5 H<sub>c2</sub> (1.7 T) along z at a bias of 0.2 I<sub>dep</sub>. The field fills the block with about ten vortices, the bias pushes them across from one edge to the other, and new ones enter as old ones leave, so there is a steady flux-flow voltage of about a tenth of the normal-state value. That dissipation is small and spread out, so the oxide can carry it away: in the CPU reference the film stays below about 5 K for 600 τ with the real SiO₂ cooling. It latches only when the dissipation outruns the cooling. Raise the bias to 0.3 I<sub>dep</sub>, or the field to 0.55 H<sub>c2</sub>, and the vortices merge into a nearly normal, self-heated state. The <b>Joule heating</b> switch turns the heat source off, which gives the isothermal TDGL of the older 2-D demos: vortices flow at any bias and the block never runs away.</p>
     <p>A detection event: the <b>Photon event</b> button switches to a real SNSPD wire, 5 nm of NbN, 98 nm wide and 472 nm long, biased at 0.92 I<sub>dep</sub> and read out by 50 Ω through 50 nH (the kinetic inductance of a 3 × 3 µm meander). Each time the wire has fully recovered, a 1550 nm photon lands at its centre. At this thickness the wire cannot screen a field (its Pearl length 2λ²/d is tens of µm, against a 100 nm width), so it is solved in that thin-film limit, as pyTDGL and Vodolazov's group solve SNSPDs. That drops the screening equation, whose stability limit set the time step, so the step grows from 0.017 τ to 0.1 τ. On the CPU reference the result matches a 0.03 τ step to three digits. The heat model is unchanged. A 5 nm film already cools in about 10 ps per e-fold through its boundary into the SiO₂, the same order as the 17 ps electron-phonon escape Zotova and Vodolazov use and the 22.7 ps hotspot relaxation measured on NbN on SiO₂/Si, so nothing is sped up artificially. The slow part of the recovery is the circuit: once the wire's resistance has pushed the current into the 50 Ω, it returns with L/R = 1 ns.</p>
     <p>What the CPU reference shows, with literature checks. <i>Detection</i>: a 1550 nm photon at the centre switches the wire at 0.90 I<sub>dep</sub> and above, an 800 nm (1.55 eV) one from 0.85, and nothing switches in the dark at 0.97. Zotova and Vodolazov (PRB 85, 024509, 2012) find 0.90 for a centre photon. <i>Hotspot growth</i>: a normal belt crosses the width about 6 ps after absorption. Its own Joule heat grows it to about 150 nm and 15 mV while the current drains into the load. Kerman et al. (PRB 79, 100509, 2009) measured hotspots of up to about 300 nm. <i>Retrapping</i>: with the current down to 0.16 I<sub>b</sub>, the wire is superconducting again about 85 ps after the photon, and the current then climbs back over a nanosecond. <i>Latching</i>: cut L/R to 10 ps or less (500 Ω and 5 nH, say) and the hotspot holds itself at a steady resistance above the load's, the latched state of Kerman et al. and Annunziata et al. (J. Appl. Phys. 108, 084507, 2010). The model still resets at L/R = 25 ps, while Kerman's NbN wires latched up to roughly 0.1 to 0.25 ns. The simulated hotspot recovers about ten times too easily, probably because a near-T<sub>c</sub> GL heat model of a 472 nm block does not capture the slower electron and phonon escape of a real meander.</p>
+    <p><b>Notch and the diode effect.</b> The <b>Notch</b> switch cuts a notch 30 nm along the block and a quarter of its width deep into one long edge, centred between the contacts, through the whole thickness. Its walls are vacuum to the condensate (tdgl3d's vacuum hole: no supercurrent crosses them, n·(∇ − iA)ψ = 0, so the rim is not pair-broken). Without a field the block stays symmetric: reversing the current is the same as conjugating ψ, so the + and − switching currents are equal and η = 0. A perpendicular field drives Meissner currents that run opposite ways along the two edges, so the bias adds to them on one edge and subtracts on the other, and vortices enter where the sum first reaches the edge barrier. The notch lowers that barrier on its own edge only, so the polarity that loads the notched edge switches first: a superconducting diode, with efficiency η = (I<sub>sw+</sub> − |I<sub>sw−</sub>|) / (I<sub>sw+</sub> + |I<sub>sw−</sub>|). This is the asymmetric-edge-barrier mechanism of Vodolazov and Peeters (PRB 72, 172508 (2005)) and of <a href="https://arxiv.org/abs/2406.12175">Castellani, Medeiros et al., arXiv:2406.12175</a>, whose notched NbN wires reach η ≈ 35 %. On the CPU reference (default 39 nm block, 0.2 H<sub>c2</sub>, default sweep rate, heat on) the block switches at 0.71 I<sub>dep</sub> one way and 0.48 I<sub>dep</sub> the other, η ≈ 19 %. Without the notch the two are equal (0.78 I<sub>dep</sub> both ways on the 20 nm block without heat). One simplification: the normal current is still solved on the whole block, so once resistive a little of it crosses the notch. tdgl3d, which cuts it too, gives the same switching asymmetry within about 10 % (20 nm block, no heat: η 27 % against the page's 22 % at 0.2 H<sub>c2</sub>, 15 % against 14 % at 0.1 H<sub>c2</sub>).</p>
     <p>The |ψ| and phase maps are painted on the film's faces straight from the solver's nodes. In the phase view each vortex is a point where all the colours meet, and the colours wind once around it. The smooth colour bands between vortices depend on the gauge the solver uses for the field; only the windings are physical. The vortex-tube surface is drawn where |ψ| drops to the chosen fraction of the bulk |ψ| in each layer, so a field that weakens the whole film does not paint false sheets along its faces.</p>
     <p>The bipolar sweep on the CPU reference (20 nm block, fastest rate, no field): from a fresh block the positive and negative halves are mirror images, switching at 1.07 I<sub>dep</sub> and latching. The positive half reaches zero with the film near 15 K, and the block then waits about 3,100 τ (270 ps) at zero to cool below 4.4 K with |ψ| fully back. The negative half then switches the same way and ends a little hotter (about 16 K), because the oxide still holds a trace of the first half's heat.</p>
     <p>What the reference sweep shows (the page's own model run on the CPU, 39 nm block, default sweep): the block stays superconducting up to about the depairing current (only the small L dI/dt voltage shows), switches at about 1.0 I<sub>dep</sub> straight onto the normal line, and heats to well above T<sub>c</sub>. A 39 nm block makes so much Joule heat per area that it stays normal all the way down and only recovers while resting at zero: it latches. The 20 nm block makes half the heat per area and retraps sooner; a real 5 nm detector, less again.</p>
@@ -442,7 +445,15 @@ class Heat3D extends Tdgl3DT {
     this.oxT = Array.from({ length: ox }, () => new Float64Array(nxy)); // 0 = top, under the film
     this.oxT2 = Array.from({ length: ox }, () => new Float64Array(nxy));
     this.pending = [];
+    this.setNotch(cfg.notch ?? null);
   }
+  // a notch etched through every layer: nodes I0..I1 x J0..J1 (1-based) hold no condensate, and the links
+  // touching them are cut from psi (tdgl3d's vacuum hole, n.(grad - iA)psi = 0 at the rim)
+  setNotch(n) {
+    this.notch = n;
+    if (n) for (let K = 1; K <= this.nz; K++) for (let J = n[2]; J <= n[3]; J++) for (let I = n[0]; I <= n[1]; I++) { const a = this.id(I, J, K); this.pr[a] = 0; this.pi[a] = 0; }
+  }
+  hole(I, J) { const n = this.notch; return !!n && I >= n[0] && I <= n[1] && J >= n[2] && J <= n[3]; }
   photon(x, y, R, th) { this.pending.push({ x, y, R, th }); } // through the whole thickness, at node (I, J): x = I h
   absorb() {
     const { nx, ny, nz, h, theta } = this;
@@ -459,14 +470,15 @@ class Heat3D extends Tdgl3DT {
     const hop = (p, ph) => { const c = Math.cos(ph), s = Math.sin(ph); return [p[0] * c + p[1] * s, p[1] * c - p[0] * s]; };
     const X = this.phix.bind(this), Y = this.phiy.bind(this), Z = this.phiz.bind(this);
     for (let K = 1; K <= nz; K++) for (let J = 1; J <= ny; J++) for (let I = 1; I <= nx; I++) {
-      const a = this.id(I, J, K), xr = this.pr[a], xi = this.pi[a];
-      const fxp = hop(this.psi(I + 1, J, K), this.ax[a]), fyp = hop(this.psi(I, J + 1, K), this.ay[a]), fzp = hop(this.psi(I, J, K + 1), this.az[a]);
-      const bxm = hop(this.psi(I - 1, J, K), -X(I - 1, J, K)), bym = hop(this.psi(I, J - 1, K), -Y(I, J - 1, K)), bzm = hop(this.psi(I, J, K - 1), -Z(I, J, K - 1));
+      const a = this.id(I, J, K), xr = this.pr[a], xi = this.pi[a], me = [xr, xi], cut = (I2, J2) => this.hole(I2, J2);
+      // a neighbour in the notch is replaced by this node itself: no gradient and no supercurrent across the rim
+      const fxp = cut(I + 1, J) ? me : hop(this.psi(I + 1, J, K), this.ax[a]), fyp = cut(I, J + 1) ? me : hop(this.psi(I, J + 1, K), this.ay[a]), fzp = hop(this.psi(I, J, K + 1), this.az[a]);
+      const bxm = cut(I - 1, J) ? me : hop(this.psi(I - 1, J, K), -X(I - 1, J, K)), bym = cut(I, J - 1) ? me : hop(this.psi(I, J - 1, K), -Y(I, J - 1, K)), bzm = hop(this.psi(I, J, K - 1), -Z(I, J, K - 1));
       const lr = (fxp[0] + bxm[0] + fyp[0] + bym[0] + fzp[0] + bzm[0] - 6 * xr) * ih2;
       const li = (fxp[1] + bxm[1] + fyp[1] + bym[1] + fzp[1] + bzm[1] - 6 * xi) * ih2;
       const eps0 = I <= this.bank || I > nx - this.bank ? 2 : 1; // stronger banks next to the contacts
       const g = eps0 - theta[a] - (xr * xr + xi * xi);
-      const fr = (lr + g * xr) / u, fi = (li + g * xi) / u;
+      const inN = this.hole(I, J), fr = inN ? 0 : (lr + g * xr) / u, fi = inN ? 0 : (li + g * xi) / u;
       Q[a] = u * (fr * fr + fi * fi);
       const m = mu[a], c = Math.cos(m * dt), s = Math.sin(m * dt), nr = xr + dt * fr, ni = xi + dt * fi;
       npr[a] = nr * c + ni * s; npi[a] = ni * c - nr * s;
@@ -854,10 +866,12 @@ class Gpu3D {
 const STEPH = `#version 300 es
 precision highp float; precision highp int;
 layout(location = 0) out vec4 o0; layout(location = 1) out vec4 o1; layout(location = 2) out vec4 o2;
-uniform float dt, k2, u, kick, seed, frz; uniform int bank; uniform sampler2D U;
+uniform float dt, k2, u, kick, seed, frz; uniform int bank; uniform ivec4 nt; uniform sampler2D U;
 ` + GLSL_GRID + `
 float mu(int I, int J, int K){ return texelFetch(U, cell(I - 1, J - 1, K - 1), 0).x - texelFetch(U, ivec2(0), 0).x; }
 vec2 hop(vec2 p, float ph){ return cmul(p, cisx(-ph)); }
+// the notch: nodes nt.x..nt.y along x, nt.z..nt.w along y, through every layer (none when nt.y < nt.x)
+bool hole(int I, int J){ return I >= nt.x && I <= nt.y && J >= nt.z && J <= nt.w; }
 float hash(vec2 p){ p = fract(p * vec2(443.897, 441.423) + seed); p += dot(p, p.yx + 19.19); return fract((p.x + p.y) * p.x); }
 void main(){
   int px = int(gl_FragCoord.x), py = int(gl_FragCoord.y);
@@ -866,16 +880,19 @@ void main(){
   int I = i + 1, J = j + 1, K = k + 1;
   vec4 a = s0(I, J, K); vec4 b = texelFetch(S1, cell(i, j, k), 0); float pz = b.x, th = b.y;
   vec2 x = a.xy; float pxl = a.z, pyl = a.w;
-  vec2 fxp = hop(psi(I + 1, J, K), pxl), fyp = hop(psi(I, J + 1, K), pyl), fzp = hop(psi(I, J, K + 1), pz);
-  vec2 bxm = hop(psi(I - 1, J, K), -phix(I - 1, J, K));
-  vec2 bym = hop(psi(I, J - 1, K), -phiy(I, J - 1, K));
+  // a neighbour in the notch stands in as this node itself: the link is cut, no gradient and no supercurrent
+  // across the rim (tdgl3d's vacuum hole, n.(grad - iA)psi = 0)
+  vec2 fxp = hole(I + 1, J) ? x : hop(psi(I + 1, J, K), pxl), fyp = hole(I, J + 1) ? x : hop(psi(I, J + 1, K), pyl), fzp = hop(psi(I, J, K + 1), pz);
+  vec2 bxm = hole(I - 1, J) ? x : hop(psi(I - 1, J, K), -phix(I - 1, J, K));
+  vec2 bym = hole(I, J - 1) ? x : hop(psi(I, J - 1, K), -phiy(I, J - 1, K));
   vec2 bzm = hop(psi(I, J, K - 1), -phiz(I, J, K - 1));
   vec2 lap = (fxp + bxm + fyp + bym + fzp + bzm - 6. * x) / (h * h);
   float eps0 = I <= bank || I > nx - bank ? 2. : 1.; // stronger banks next to the contacts
-  vec2 f = (lap + (eps0 - th - dot(x, x)) * x) / u;
+  bool inN = hole(I, J);
+  vec2 f = inN ? vec2(0.) : (lap + (eps0 - th - dot(x, x)) * x) / u;
   float m = mu(I, J, K);
-  vec2 np = cmul(x + dt * f, cisx(-m * dt));
-  if (kick > 0. && dot(np, np) < 1e-6) { // reseed a collapsed psi, as tdgl3d's ThermalSolver.kick
+  vec2 np = inN ? vec2(0.) : cmul(x + dt * f, cisx(-m * dt));
+  if (kick > 0. && !inN && dot(np, np) < 1e-6) { // reseed a collapsed psi, as tdgl3d's ThermalSolver.kick
     float r = sqrt(-2. * log(max(hash(gl_FragCoord.xy), 1e-7))), t = 6.2831853 * hash(gl_FragCoord.yx + .5);
     np += kick * r * vec2(cos(t), sin(t)); }
   float jx = x.x * fxp.y - x.y * fxp.x, jy = x.x * fyp.y - x.y * fyp.x, jz = x.x * fzp.y - x.y * fzp.x;
@@ -969,8 +986,19 @@ class GpuHeat3D extends Gpu3D {
       return t; });
     this.pending = null; this.nstep = 0;
   }
+  // a notch through every layer: [I0, I1, J0, J1] in 1-based node indices, or null; psi in it is zeroed now
+  setNotch(n) {
+    this.notch = n;
+    if (n) { const o = this.read(), d = new Float32Array(4 * this.W * this.H);
+      for (let k = 0; k < this.nz; k++) for (let j = 0; j < this.ny; j++) for (let i = 0; i < this.nx; i++) {
+        const a = i + this.nx * (j + this.ny * k), q = 4 * this.texel(i, j, k), cut = i + 1 >= n[0] && i + 1 <= n[1] && j + 1 >= n[2] && j + 1 <= n[3];
+        d[q] = cut ? 0 : o.pr[a]; d[q + 1] = cut ? 0 : o.pi[a]; d[q + 2] = o.ax[a]; d[q + 3] = o.ay[a];
+      }
+      this.upload(this.a[0], d); }
+  }
   reset(noise = 0, seed = 7) {
     super.reset(noise, seed);
+    if (this.notch) this.setNotch(this.notch);
     if (this.oxT) for (const t of this.oxT) { const gl = this.gl; gl.bindTexture(gl.TEXTURE_2D, t); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.nx, this.ny, gl.RGBA, gl.FLOAT, new Float32Array(4 * this.nx * this.ny)); }
   }
   photon(x, y, R, th) { this.pending = [x, y, R, th]; } // absorbed at the end of the next step
@@ -990,6 +1018,7 @@ class GpuHeat3D extends Gpu3D {
       gl.bindBuffer(gl.ARRAY_BUFFER, this.quad); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
       const L = this.bindGrid(p);
       gl.uniform1f(L('dt'), this.dt); gl.uniform1f(L('k2'), this.kappa ** 2 / (h * h)); gl.uniform1f(L('u'), this.u); gl.uniform1i(L('bank'), this.bank); gl.uniform1f(L('frz'), this.frozen ? 1 : 0);
+      const nt = this.notch || [1, 0, 1, 0]; gl.uniform4i(L('nt'), nt[0], nt[1], nt[2], nt[3]);
       gl.uniform1f(L('kick'), this.kick * Math.sqrt(this.dt)); gl.uniform1f(L('seed'), (this.nstep * 0.6180339887) % 1);
       gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, this.mu); gl.uniform1i(L('U'), 5);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -1052,14 +1081,21 @@ uniform sampler2D OX;
 uniform sampler2D PN;   // .x: bulk |psi| of each z-plane (a texture, not a uniform array: Direct3D turns a
                         // dynamically indexed uniform array into a long branch chain that stalls its compiler); the surface is drawn on (|psi| / bulk)^2, so heat or
                         // surface suppression that lowers a whole plane does not read as a vortex
+uniform ivec4 nt;       // the notch, as in gpuheat3d.mjs: nodes nt.x..nt.y along x, nt.z..nt.w along y (none when nt.y < nt.x)
 ` + GLSL_GRID + `
-float node(int I, int J, int K){ I = clamp(I, 1, nx); J = clamp(J, 1, ny); K = clamp(K, 1, nz); vec2 p = s0(I, J, K).xy / texelFetch(PN, ivec2(K - 1, 0), 0).x; return dot(p, p); }
+// a node in the notch reads as the nearest node on its rim, so neither the surface nor the skin sees the empty notch as a vortex
+ivec2 rim(int I, int J){
+  if (I < nt.x || I > nt.y || J < nt.z || J > nt.w) return ivec2(I, J);
+  int dl = I - nt.x + 1, dr = nt.y + 1 - I, du = nt.w + 1 - J;
+  return du <= dl && du <= dr ? ivec2(I, nt.w + 1) : dl < dr ? ivec2(nt.x - 1, J) : ivec2(nt.y + 1, J); }
+bool inNotch(vec3 g){ return nt.y >= nt.x && g.x > float(nt.x) - .5 && g.x < float(nt.y) + .5 && g.y > float(nt.z) - .5 && g.y < float(nt.w) + .5; }
+float node(int I, int J, int K){ I = clamp(I, 1, nx); J = clamp(J, 1, ny); K = clamp(K, 1, nz); ivec2 r = rim(I, J); I = r.x; J = r.y; vec2 p = s0(I, J, K).xy / texelFetch(PN, ivec2(K - 1, 0), 0).x; return dot(p, p); }
 float amp(vec3 g){
   vec3 b = floor(g), f = g - b; int I = int(b.x), J = int(b.y), K = int(b.z);
   float a = mix(mix(node(I,J,K), node(I+1,J,K), f.x), mix(node(I,J+1,K), node(I+1,J+1,K), f.x), f.y);
   float c = mix(mix(node(I,J,K+1), node(I+1,J,K+1), f.x), mix(node(I,J+1,K+1), node(I+1,J+1,K+1), f.x), f.y);
   return mix(a, c, f.z); }
-vec2 cnode(int I, int J, int K){ I = clamp(I, 1, nx); J = clamp(J, 1, ny); K = clamp(K, 1, nz); return s0(I, J, K).xy; }
+vec2 cnode(int I, int J, int K){ I = clamp(I, 1, nx); J = clamp(J, 1, ny); K = clamp(K, 1, nz); ivec2 r = rim(I, J); I = r.x; J = r.y; return s0(I, J, K).xy; }
 float anode(int I, int J, int K){ return length(cnode(I, J, K)); }
 float ampAt(vec3 g){
   g = clamp(g, vec3(1.), vec3(float(nx), float(ny), float(nz)));
@@ -1132,6 +1168,17 @@ void main(){
   float pad = 7. * h, oxBot = lo.z - 4. * h, siBot = oxBot - 8. * h;
   vec3 nS, nL, nR, nU, nF, nF0;
   vec2 tF0 = box(lo, hi, rd, nF0);
+  vec3 toG = vec3(1.) / h, off = (n3 + 1.) * .5;
+  if (nt.y >= nt.x && tF0.y > max(tF0.x, 0.)) { // the notch cut out of the film: a ray entering through it meets the notch's walls
+    vec3 nlo = (vec3(float(nt.x) - .5, float(nt.z) - .5, 0.) - off) * h, nhi = (vec3(float(nt.y) + .5, float(nt.w) + .5, 0.) - off) * h, nN;
+    nlo.z = lo.z - h; nhi.z = hi.z + h; if (nt.z <= 1) nlo.y -= h; if (nt.w >= ny) nhi.y += h;
+    vec2 tN = box(nlo, nhi, rd, nN);
+    float te = max(tF0.x, 0.);
+    if (tN.x <= te && te < tN.y) {
+      vec3 a = (nlo - eye) / rd, b = (nhi - eye) / rd, fa = max(a, b);
+      nF0 = tN.y == fa.x ? vec3(-sign(rd.x), 0., 0.) : tN.y == fa.y ? vec3(0., -sign(rd.y), 0.) : vec3(0., 0., -sign(rd.z));
+      tF0.x = tN.y; if (tN.y >= tF0.y) tF0.y = -1.; }
+  }
   vec2 tS = box(vec3(lo.x - pad, lo.y - h * .5, siBot), vec3(hi.x + pad, hi.y + h * .5, oxBot), rd, nS);
   vec2 tL = box(vec3(lo.x - pad, lo.y - h * .5, lo.z - .01), vec3(lo.x - h * .5, hi.y + h * .5, hi.z + 1.5 * h), rd, nL);
   vec2 tR = box(vec3(hi.x + h * .5, lo.y - h * .5, lo.z - .01), vec3(hi.x + pad, hi.y + h * .5, hi.z + 1.5 * h), rd, nR);
@@ -1150,7 +1197,6 @@ void main(){
   if (tF.y > max(tF.x, 0.)) { ta = min(ta, tF.x); tb = max(tb, tF.y); }
   ta = max(ta, 0.); tb = min(tb, tO); if (onSkin) tb = min(tb, max(tF0.x, 0.));
   vec3 C = vec3(0.); float Tr = 1.;
-  vec3 toG = vec3(1.) / h, off = (n3 + 1.) * .5;
   float stp = .4 * h, glowB = 0.;
   bool hit = false; float th = 0.;
   for (int s = 0; s < 600; s++) {
@@ -1171,6 +1217,7 @@ void main(){
     }
     if (onSkin || any(lessThan(p, lo)) || any(greaterThan(p, hi))) continue;
     vec3 g = p * toG + off;
+    if (inNotch(g)) continue;
     // next to a contact psi is pinned to 0: not a vortex, so the surface skips it
     float am = g.x < 4. || g.x > float(nx) - 3. ? 1. : amp(g);
     if (heatOn > .5) {
@@ -1267,6 +1314,7 @@ class RenderHeat3D {
     const wx = c.eye[0] + t * rd[0], wy = c.eye[1] + t * rd[1];
     const x = wx + (s.nx + 1) * s.h / 2, y = wy + (s.ny + 1) * s.h / 2;
     if (x < s.h || x > s.nx * s.h || y < s.h || y > s.ny * s.h) return null;
+    const n = s.notch; if (n && x > (n[0] - 0.5) * s.h && x < (n[1] + 0.5) * s.h && y > (n[2] - 0.5) * s.h && y < (n[3] + 0.5) * s.h) return null; // nothing to absorb it in the notch
     return { x, y, wx, wy };
   }
   // per-plane bulk |psi| from a read-back state: the 90th percentile away from the contacts. A plane
@@ -1291,7 +1339,8 @@ class RenderHeat3D {
     gl.uniform3f(L('eye'), ...c.eye); gl.uniform3f(L('fw'), ...c.fw); gl.uniform3f(L('rt'), ...c.rt); gl.uniform3f(L('up'), ...c.up);
     gl.uniform1f(L('fov'), c.fov); gl.uniform1f(L('iso'), this.iso * this.iso); gl.activeTexture(gl.TEXTURE7); gl.bindTexture(gl.TEXTURE_2D, this.pnTex); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 32, 1, gl.RED, gl.FLOAT, this.norm); gl.uniform1i(L('PN'), 7); gl.uniform1f(L('fieldOn'), this.field ? 1 : 0);
     gl.uniform1f(L('heatOn'), this.heat ? 1 : 0); gl.uniform1f(L('skin'), this.skin); gl.uniform1f(L('dark'), this.dark); gl.uniform1f(L('heatK'), this.heatK);
-    gl.uniform1f(L('bmag'), Math.hypot(...s.B)); gl.uniform4f(L('beam'), ...this.beam);
+    gl.uniform1f(L('bmag'), Math.hypot(...s.B));
+    const nt = s.notch || [1, 0, 1, 0]; gl.uniform4i(L('nt'), nt[0], nt[1], nt[2], nt[3]); gl.uniform4f(L('beam'), ...this.beam);
     const k = this.colors;
     for (const [u, v] of [['cBg', k.bg], ['cBg2', k.bg2], ['cEdge', k.edge], ['cTube', k.tube], ['cField', k.field], ['cLead', k.lead], ['cOx', k.ox], ['cSi', k.si], ['cBeam', k.beam]]) gl.uniform3f(L(u), ...v);
     gl.bindBuffer(gl.ARRAY_BUFFER, s.quad); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
@@ -1406,6 +1455,9 @@ let mode = 'hold', ramp = newRamp(), hist = [], sweep = { up: [], dn: [], nup: [
 const traceTau = () => cycle ? 16000 : mode === 'ramp' ? Math.min(40000, Math.max(1.1 * (4 * +$('cS').value / (+$('rateS').value / 1000) + 2 * DWELL), 1.05 * (sim.t - ramp.t0))) : 1200; // window of the traces: the whole current cycle, cooling rests included
 const VTH = 0.12;                  // dimensionless voltage that counts as resistive
 const rnProbe = () => 900 * 5 / thickNm() * (sim.nx / 2) / sim.ny;  // ohms across the probe span: 900 ohm per square at 5 nm, scaled to the thickness
+// the notch: 6 nodes (30 nm) along x, centred, and a quarter of the width deep from the y = 0 edge, through every layer
+let notchOn = false;
+const notchNodes = () => notchOn ? [(sim.nx >> 1) - 2, (sim.nx >> 1) + 3, 1, sim.ny >> 2] : null;
 const FLOW = { B: 0.5, f: 0.2, x: 0, size: 'b' }; // the flux-flow preset, checked on the CPU reference
 const COLD = 0.03;                 // film theta (about 4.4 K) the block must cool below before the sweep crosses zero
 const DWELL = 40;                  // shortest stop at zero current between half-sweeps; it lasts until the block has cooled
@@ -1445,7 +1497,7 @@ function build() {
   const thin = key === THIN;
   sim = new GpuHeat3D(gl, { nx, ny, nz, h: H, kappa, dt: thin ? DT_THIN : dtFor(kappa), B: thin ? [0, 0, 0] : field(), u: 5.79, q: 0.1, Dth: 0.042, bank: 5, ox: 4, kick: 1e-4, frozen: thin });
   sim.reset(0.02); iDev = null; sim.q = heating ? 0.1 : 0;
-  sim.setTransport(thin ? [new Map(), new Map(), new Map()] : bmaps(key)); sim.term = 1;
+  sim.setTransport(thin ? [new Map(), new Map(), new Map()] : bmaps(key)); sim.term = 1; sim.setNotch(notchNodes());
   for (const id of ['bS', 'tS', 'lS']) $(id).disabled = thin;
   $('thinNote').hidden = !thin; if (!thin) cycle = false;
   const keep = view && { yaw: view.yaw, pitch: view.pitch, dist: view.dist, field: view.field, heat: view.heat, skin: view.skin };
@@ -1515,6 +1567,8 @@ function showSw() { // switching and retrapping currents for the + and - halves 
   const lat = k => isw[k] !== null && ire[k] === null && (ramp.dir === 0 || ramp.sign !== (k === 'p' ? 1 : -1)) ? 'latched' : null;
   $('rIsw').textContent = isw.p === null && isw.n === null ? '–' : `${one(isw.p, '+')} · ${one(isw.n, '−')}`;
   $('rIre').textContent = ire.p === null && ire.n === null && !lat('p') && !lat('n') ? '–' : `${lat('p') ?? one(ire.p, '+')} · ${lat('n') ?? one(ire.n, '−')}`;
+  // diode efficiency from the two switching currents: (I+ − |I−|) / (I+ + |I−|)
+  $('rEta').textContent = isw.p === null || isw.n === null ? '–' : `${(100 * (isw.p - isw.n) / (isw.p + isw.n)).toFixed(0)} %`;
 }
 function plot(id) { // size a 2-D canvas to its box and return a drawing context
   const c = $(id), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -1944,6 +1998,11 @@ $('autoBtn').addEventListener('click', () => { auto = !auto; $('autoBtn').setAtt
 $('resetBtn').addEventListener('click', () => { sim.reset(0.02); iDev = null; nextShot = 300; vAvg = 0; hotSince = null; hist = []; if (mode === 'ramp') { ramp = newRamp(); clearIV(); } });
 $('pauseBtn').addEventListener('click', () => { paused = !paused; $('pauseBtn').setAttribute('aria-pressed', paused); $('pauseBtn').textContent = paused ? 'Resume' : 'Pause'; });
 $('linesBtn').addEventListener('click', () => { lines.on = !lines.on; $('linesBtn').setAttribute('aria-pressed', lines.on); if (lines.on) traceLines(sim.read()); drawLines(); });
+$('notchBtn').addEventListener('click', () => { // a new geometry: start the block again from a clean superconducting state
+  notchOn = !notchOn; $('notchBtn').setAttribute('aria-pressed', notchOn);
+  sim.setNotch(notchNodes()); sim.reset(0.02); iDev = null; vAvg = 0; hotSince = null; hist = []; if (mode === 'ramp') { ramp = newRamp(); clearIV(); }
+  labels();
+});
 $('fieldBtn').addEventListener('click', () => { view.field = !view.field; $('fieldBtn').setAttribute('aria-pressed', view.field); });
 $('heatBtn').addEventListener('click', () => { view.heat = !view.heat; $('heatBtn').setAttribute('aria-pressed', view.heat); });
 $('jouleBtn').addEventListener('click', () => { heating = !heating; sim.q = heating ? 0.1 : 0; $('jouleBtn').setAttribute('aria-pressed', heating); });
@@ -1981,11 +2040,11 @@ canvas.addEventListener('webglcontextrestored', () => { try { sim = null; build(
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeColors); } catch {}
 new MutationObserver(themeColors).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
-function check() { // GPU against the double-precision reference (matches tdgl3d to round-off): current, field, photon, oxide
+function check() { // GPU against the double-precision reference (matches tdgl3d to round-off): current, field, photon, oxide, notch
   const empty = () => [new Map(), new Map(), new Map()];
   const cfg = { nx: 7, ny: 6, nz: 4, h: 0.5, kappa: 1.5, dt: 0.01, B: [0.05, 0, 0.3], u: 5.79, q: 0.1, Dth: 0.042, ox: 4 };
-  const g = new GpuHeat3D(gl, cfg), c = new Heat3D({ ...cfg, I: 0.8, b: empty() });
-  g.setTransport(empty()); g.I = 0.8; g.term = 1;
+  const g = new GpuHeat3D(gl, cfg), c = new Heat3D({ ...cfg, I: 0.8, b: empty(), notch: [3, 5, 1, 2] });
+  g.setTransport(empty()); g.I = 0.8; g.term = 1; g.setNotch([3, 5, 1, 2]);
   for (let k = 0; k < 300; k++) { if (k === 49) g.photon(2, 1.5, 0.9, 2); g.step(1); c.step(); if (k === 49) { c.photon(2, 1.5, 0.9, 2); c.absorb(); } }
   const o = g.read(), hh = g.readHeat(); let e = 0;
   for (let k = 0; k < c.n; k++) e = Math.max(e, Math.abs(Math.hypot(o.pr[k], o.pi[k]) - Math.hypot(c.pr[k], c.pi[k])), Math.abs(hh.theta[k] - c.theta[k]));
@@ -2014,7 +2073,7 @@ else {
     GPU = gpuName(); build(); setSkin();
     requestAnimationFrame(loop);
     report('started');
-    setTimeout(() => { try { const err = check(); $('checkNote').textContent = `GPU check: after 300 steps with a current, a tilted field, a photon and the oxide (and 300 more in the thin-film mode), this GPU's ψ and temperatures match the double-precision reference (which matches tdgl3d to round-off) to ${err.toExponential(1)} (${gpuName()}).`; report(err < 1e-3 ? 'check-ok' : 'check-mismatch', err.toExponential(1)); } catch (e) { $('checkNote').textContent = 'GPU check could not run: ' + e.message; report('check-failed', e.message); } }, 1500);
+    setTimeout(() => { try { const err = check(); $('checkNote').textContent = `GPU check: after 300 steps with a current, a tilted field, a photon, the oxide and a notch (and 300 more in the thin-film mode), this GPU's ψ and temperatures match the double-precision reference (which matches tdgl3d to round-off) to ${err.toExponential(1)} (${gpuName()}).`; report(err < 1e-3 ? 'check-ok' : 'check-mismatch', err.toExponential(1)); } catch (e) { $('checkNote').textContent = 'GPU check could not run: ' + e.message; report('check-failed', e.message); } }, 1500);
     setTimeout(() => report('running-20s'), 20000); // a heartbeat: reached only if the page kept going
   } catch (e) { $('errBox').hidden = false; $('errBox').textContent = String(e && e.message || e); report('start-failed', String(e && e.message || e)); }
 }

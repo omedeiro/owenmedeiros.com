@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.16.0 — 2026-10-28
+
+### Added
+
+- The live NbN simulator has a **Notch** switch in its right panel: a notch 30 nm along the block and a quarter of its width deep, cut into one long edge, centred between the contacts and through every layer. Its walls are vacuum to the condensate (tdgl3d's vacuum hole: links into it are cut, so no supercurrent crosses the rim). The 3-D view cuts it out of the film, photons cannot land in it, and the page's GPU check now runs with a notch too
+- With a perpendicular field the notched block is a superconducting diode, and the I–V panel shows its efficiency η = (I<sub>sw+</sub> − |I<sub>sw−</sub>|) / (I<sub>sw+</sub> + |I<sub>sw−</sub>|) once a bipolar sweep has switched both ways. On the CPU reference (39 nm block, 0.2 H<sub>c2</sub>, heat on) it switches at 0.71 and 0.48 I<sub>dep</sub>, η ≈ 19 %; without the notch the two are equal. tdgl3d gives the same asymmetry within about 10 %. A notes paragraph explains the edge-barrier mechanism and cites Castellani, Medeiros et al., arXiv:2406.12175
+
 ## 2.15.0 — 2026-10-28
 
 ### Added
