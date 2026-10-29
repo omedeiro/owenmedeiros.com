@@ -86,3 +86,18 @@ against a scratch directory:
 echo '2026-10-28T07:12:00-04:00,181.4,lb' \
   | TZ=America/New_York python scripts/import_shortcut_weight.py --payload-file - --out-dir /tmp/habits
 ```
+
+## When the run is red
+
+The log prints the first 400 bytes the phone sent. If the lines are bare
+numbers such as `184.49` with no date, the **Text** action inside the Repeat
+holds only *Value*; it needs `Formatted Date,Value,Unit`. That was the first
+run's payload on 2026-10-29. An undatable reading cannot be filed under a day,
+so it fails the run rather than passing as an empty window.
+
+Skipping the Repeat also works: a single Text action holding
+`Start Date,Value,Unit` over the whole list renders as all the dates, then all
+the values, then all the units, and the importer rebuilds the rows from that
+(the second run's payload). Shortcuts' default date display,
+`Oct 28, 2026 at 2:34 PM`, is read as local time, so Format Date is optional
+too.
