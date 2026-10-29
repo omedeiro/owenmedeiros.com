@@ -1,0 +1,8 @@
+{
+  "id": "weight",
+  "label": "Weight",
+  "source": "Withings",
+  "unit": "lb",
+  "updated_at": null,
+  "days": {}
+}

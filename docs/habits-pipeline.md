@@ -16,6 +16,7 @@ details of the Apple data sources. This is the architectural view.
 | Commits | GitHub | GraphQL contributions API | CI, nightly | full history | 418 days, from 2020-06-04 |
 | Screen time | `knowledgeC.db` + Biome | local files on the Mac | LaunchAgent, 3×/day | **~28 days** | 29 days |
 | Stretching | Bend → Apple Health | Shortcut → `repository_dispatch` | CI, on each push from the phone | ~unlimited | 19 days + whatever the phone has sent |
+| Weight | Withings → Apple Health | Shortcut → `repository_dispatch` | CI, on each push from the phone | ~unlimited | new 2026-10-29; see `docs/withings-weight-shortcut.md` |
 | Sleep | Apple Health | export, or Shortcut drop | manual / LaunchAgent | ~unlimited | **none — column removed** |
 
 Four transports, in descending order of reliability: a web API anyone can call,

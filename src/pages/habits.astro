@@ -5,6 +5,7 @@ import pushups from "../data/habits/pushups.json";
 import commits from "../data/habits/commits.json";
 import screentime from "../data/habits/screentime.json";
 import stretching from "../data/habits/stretching.json";
+import weight from "../data/habits/weight.json";
 
 // Geometry. One SVG holds the month gutter and every habit block so the rows
 // stay locked together in a single scroll container. WEEKS is derived further
@@ -36,6 +37,26 @@ const hm = (hours: number) => {
  * stay at or under this many hours.
  */
 const SCREEN_TIME_TARGET_H = 2;
+
+/**
+ * Weight is the one column where the cell's number is a measurement rather than
+ * an amount of doing, so shading only says heavier or lighter than usual. The
+ * habit itself is stepping on the scale: a good day is a day with a reading.
+ * The summary quotes the latest reading and its drift over the last 30 days,
+ * which is what the totals the other columns use would be for a measurement.
+ */
+function weightSummary(days: Record<string, Day>) {
+  const keys = Object.keys(days).filter((k) => days[k].value > 0).sort();
+  if (!keys.length) return "—";
+  const last = keys[keys.length - 1];
+  const latest = days[last].value;
+  const cutoff = new Date(`${last}T00:00:00`);
+  cutoff.setDate(cutoff.getDate() - 30);
+  const base = keys.find((k) => new Date(`${k}T00:00:00`) >= cutoff);
+  const delta = base && base !== last ? latest - days[base].value : null;
+  const drift = delta === null ? "" : ` · ${delta > 0 ? "+" : delta < 0 ? "−" : "±"}${Math.abs(delta).toFixed(1)} in 30 days`;
+  return `${latest.toFixed(1)} lb${drift}`;
+}
 
 /** What a summary line gets to work with — only days that recorded something. */
 type Stats = { total: number; days: number; lightest: number };
@@ -112,6 +133,19 @@ const HABITS: HabitView[] = [
       return sessions > 1 ? `${reps} · ${sessions} sessions` : reps;
     },
     summary: (s: Stats) => `${s.total.toFixed(0)} reps total`,
+  },
+  {
+    data: weight as Habit,
+    caption: "darker = heavier",
+    empty: "not weighed",
+    format: (d: Day) => {
+      const parts = [`${d.value.toFixed(1)} lb`];
+      if (d.extra?.time) parts.push(String(d.extra.time));
+      // Only the first reading of a day is kept; say so when there were more.
+      if (Number(d.extra?.readings) > 1) parts.push(`first of ${d.extra?.readings}`);
+      return parts.join(" · ");
+    },
+    summary: () => weightSummary((weight as Habit).days),
   },
 ];
 
@@ -275,17 +309,17 @@ const columns = HABITS.map((habit, index) => {
 const width = GUTTER + columns.length * BLOCK_W + (columns.length - 1) * BLOCK_GAP;
 const height = HEAD_H + WEEKS * PITCH;
 const anyData = columns.some((c) => c.hasData);
-const updated = [running, pushups, stretching, screentime, commits]
+const updated = [running, pushups, stretching, screentime, commits, weight]
   .map((h) => h.updated_at)
   .filter(Boolean)
   .sort()
   .pop();
 ---
 
-<Base title="Habits — Owen Medeiros" description="Daily habit tracking: running, push-ups, stretching, screen time, and commits." wide>
+<Base title="Habits — Owen Medeiros" description="Daily habit tracking: running, push-ups, stretching, weight, screen time, and commits." wide>
   <h1>Habits</h1>
   <p>
-    Five things I track, back to {earliestKey.slice(0, 4)}. Each block is one habit; the seven
+    Six things I track, back to {earliestKey.slice(0, 4)}. Each block is one habit; the seven
     cells across a row are Monday through Sunday, and each row down is a week
     further into the past. Hover or tap a cell for that day's numbers.
   </p>
@@ -295,7 +329,8 @@ const updated = [running, pushups, stretching, screentime, commits]
     those refresh nightly. Screen time is read off my Mac and iPhone locally
     each night. Stretching leaves the Bend app through Apple Health, which a
     Shortcut on my phone pushes here; the routines Bend never writes to Health
-    I fill in by hand. Each column starts when that source does.
+    I fill in by hand. Weight comes off a Withings scale the same way, through
+    Apple Health and a Shortcut. Each column starts when that source does.
     {updated && <> Last updated {String(updated).slice(0, 10)}.</>}
   </p>
 
@@ -309,7 +344,7 @@ const updated = [running, pushups, stretching, screentime, commits]
   <div class="habits-chart">
     <div class="habits-scroll">
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img"
-           aria-label={`Heatmaps of running, commits, screen time, stretching, and push-ups since ${earliestKey.slice(0, 4)}`}>
+           aria-label={`Heatmaps of running, commits, screen time, stretching, push-ups, and weight since ${earliestKey.slice(0, 4)}`}>
         {columns.map((column) => (
           <g>
             <text class="habits-name" x={column.x} y={12}>{column.label}</text>
@@ -387,7 +422,8 @@ const updated = [running, pushups, stretching, screentime, commits]
   </table>
   <p class="caption">
     Four of these I want more of: a good day is one the thing happened on, and a
-    streak is a run of them. Screen time I want <em>less</em> of, so that reading
+    streak is a run of them. For weight the habit is weighing in, so a good day
+    is one with a reading. Screen time I want <em>less</em> of, so that reading
     measures nothing — an unbroken run of days that recorded usage only says the
     sync is working. It is scored the other way round instead: a good day is one
     the Mac and the phone together stayed at or under {SCREEN_TIME_TARGET_H}h,
