@@ -5,6 +5,8 @@ title: Research
 
 Research and publications on superconducting detectors and electronics, produced while working in the Quantum Nanostructures and Nanofabrication Group at MIT.
 
+Simulation code: [tdgl3d](/projects/tdgl-simulation), a fully 3-D time-dependent Ginzburg–Landau simulator for superconducting devices and circuits, and a [live NbN simulator](/projects/tdgl/live/nbn-3d.html) built on it that runs in the browser.
+
 ## Theses
 
 ### Doctoral thesis

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.17.1 — 2026-10-29
+
+### Changed
+
+- Home page: *Live apps* now leads with the live NbN simulator, ahead of the Grafana dashboards. *Selected work* adds the full-wave bridge rectifier (Nature Electronics, 2025) and puts TDGL simulation ahead of soil moisture
+- Projects page: ordered TDGL simulation, soil moisture, QNN blog, budget dashboard, VR arm. Activity Analysis moves to a new *Archive* section, and its page says it is archived
+- Research page: a line under the intro points to tdgl3d and the live NbN simulator
+
 ## 2.17.0 — 2026-10-28
 
 ### Fixed
