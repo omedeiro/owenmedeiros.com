@@ -13,6 +13,13 @@
 - Bath temperature slider, 4.2 K to 9.6 K: a uniform offset of θ in the Ginzburg–Landau term (exact, since the heat equations are linear in θ); temperature readouts and traces follow it
 - Notes on the sweep, the detection, the closed forms and the CPU reference numbers (4.2 K: switching −17 % against GL, of which 4.5 % with heating off; retrapping +11 % against SBT; 6.5 K: −7.5 % and +8 %; I<sub>r</sub>/I<sub>sw</sub> = 0.30 against 0.22–0.28 measured on 5 nm NbN wires by Charaev et al. 2017)
 
+## 2.16.0 — 2026-10-28
+
+### Added
+
+- The live NbN simulator has a **Notch** switch in its right panel: a notch 30 nm along the block and a quarter of its width deep, cut into one long edge, centred between the contacts and through every layer. Its walls are vacuum to the condensate (tdgl3d's vacuum hole: links into it are cut, so no supercurrent crosses the rim). The 3-D view cuts it out of the film, photons cannot land in it, and the page's GPU check now runs with a notch too
+- With a perpendicular field the notched block is a superconducting diode, and the I–V panel shows its efficiency η = (I<sub>sw+</sub> − |I<sub>sw−</sub>|) / (I<sub>sw+</sub> + |I<sub>sw−</sub>|) once a bipolar sweep has switched both ways. On the CPU reference (39 nm block, 0.2 H<sub>c2</sub>, heat on) it switches at 0.71 and 0.48 I<sub>dep</sub>, η ≈ 19 %; without the notch the two are equal. tdgl3d gives the same asymmetry within about 10 %. A notes paragraph explains the edge-barrier mechanism and cites Castellani, Medeiros et al., arXiv:2406.12175
+
 ## 2.15.0 — 2026-10-28
 
 ### Added
