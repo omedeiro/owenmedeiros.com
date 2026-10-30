@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.17.1 — 2026-10-29
+
+### Changed
+
+- The live simulator's notch is now a V instead of a square: 45° walls cut into one long edge, centred between the contacts and through every layer, a quarter of the width deep and twice that wide at the edge, with its point aimed across the strip. The node set matches tdgl3d's triangular vacuum hole exactly, the 3-D view draws the slanted walls, and the GPU check runs with the V. On the CPU reference (39 nm block, 0.2 H<sub>c2</sub>, heat on) it switches at 0.71 and 0.51 I<sub>dep</sub>, η ≈ 16 %
+
 ## 2.17.0 — 2026-10-28
 
 ### Fixed
