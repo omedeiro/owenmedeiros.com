@@ -286,7 +286,7 @@ holding each current until the voltage and temperature settle, to draw the full 
 with its switching and retrapping currents, each checked against a closed form. The page checks its GPU against a double-precision reference that matches
 tdgl3d to round-off before it runs.
 
-The *Reference I–V* button draws the hysteretic curve real nanowires show. The 20 nm
+The *Block I–V* button draws the hysteretic curve real nanowires show. The 20 nm
 block at 4.2 K stays at zero voltage up to 0.83 of the depairing current, switches
 straight onto its normal-state line, comes back down it while its own Joule heat holds
 it above T<sub>c</sub>, and drops back to zero at 0.25: the hotspot current, where the
@@ -296,6 +296,18 @@ contacts before it switches, plus the short λ crowding current to the edges) an
 retrapping 11 % above the Skocpol–Beasley–Tinkham hotspot current worked out for this
 wire. The ratio, 0.30, is close to the 0.22–0.28 measured on 5 nm NbN wires at 4.2 K.
 A bath-temperature slider moves both down toward T<sub>c</sub>.
+
+That sweep settles every point and takes minutes. Two presets with a fixed length do the
+same on the 5 nm SNSPD wire in seconds, and grade their own curves against what measured
+ones show. *Wire I–V* switches at 0.97 of the depairing current in both directions and
+retraps at 0.29, a ratio of 0.30 against the 0.19–0.31 of 5 nm NbN wires at 4.2 K, with a
+step-like switch onto the normal line and the retrapping current 10 % under the
+Skocpol–Beasley–Tinkham value. *Diode η(B)* cuts the V notch and finds the switching current
+both ways at 15 fields up to ±410 mT: no rectification at zero field, η changing sign with
+the field and growing linearly from zero, the favoured direction's critical current first
+rising and then falling as in Hou *et al.*'s two-edge model, and η peaking at 13 % near
+255 mT. Reversing current and field together leaves every switching current unchanged to
+the last digit, as the equations require.
 
 Vortices alone do not latch it. The Flux flow preset puts the 20 nm block in
 0.5 H<sub>c2</sub> at a fifth of the depairing current: about ten vortices stream across
