@@ -96,6 +96,12 @@ jobs:
           GH_CONTRIB_TOKEN: ${{ secrets.GH_CONTRIB_TOKEN }}
         run: python scripts/fetch_github.py
 
+      # Runs before the commit so a fetch that breaks the one-JSON-per-habit
+      # contract (or an overwriting write) never lands on main. tests/ also
+      # pins the merge and the implausible() guards.
+      - name: Check the habit files still honour the contract
+        run: python3 -m unittest discover -s tests
+
       - name: Commit changed data
         run: |
           git config user.name "github-actions[bot]"

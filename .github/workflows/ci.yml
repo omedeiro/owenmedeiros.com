@@ -1,0 +1,48 @@
+name: CI
+
+# Every PR and every push to main: the habit-data tests, a production build, the
+# katex-error grep that the build's exit code does not cover, and the agentic
+# environment checker (settings.json, skills, AGENTS.md size and paths).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Habit data tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+
+      # A display-math fence on the wrong line renders the rest of the page into
+      # one red span while astro build still exits 0.
+      - name: No KaTeX errors in the built site
+        run: '! grep -rl katex-error dist/'
+
+      - name: Agentic environment is consistent
+        run: >
+          python3 scripts/check_agent_env.py
+          --require-deny 'Bash(git push origin main:*)'
+          --ignore-path src/pages/section/page-name.md
+          --ignore-path docs/figures/gallery_3d/render.py

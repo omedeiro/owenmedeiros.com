@@ -7,8 +7,9 @@ description: How the /habits data pipeline works in this repo — the fetch scri
 
 Five habits feed `/habits`, one JSON file each in `src/data/habits/`. All fetch
 scripts are **standard library only** — no pip install — so the nightly job
-cannot break on a dependency release. Read `AGENTS.md` for the runbook; this
-skill covers what is expensive to rediscover.
+cannot break on a dependency release. `AGENTS.md` holds the short contract and the
+script table; `docs/habits-setup.md` is the one-time setup; this skill covers what is
+expensive to rediscover.
 
 ## Which scripts run where
 
@@ -272,7 +273,7 @@ On the Mac, `scripts/habits_daily.py`, run by
 `~/Library/LaunchAgents/com.owenmedeiros.habits.plist` at login, 12:00 and 23:00, logging
 to `~/Library/Logs/habits-daily.log`. The plist lives in the repo as
 `scripts/com.owenmedeiros.habits.plist` with `{{HOME}}`/`{{REPO}}` placeholders (launchd
-does not expand `~`); AGENTS.md step 4 has the install. Three fire times rather than one
+does not expand `~`); `docs/habits-setup.md` step 4 has the install. Three fire times rather than one
 because the sources are pruned to ~4 weeks and a night the Mac was shut is gone — repeat
 runs are free, since `write_habit` merges and the commit is skipped when no day changed.
 
@@ -282,3 +283,96 @@ commit, never mid-rebase or mid-merge.
 
 Test it without waiting:
 `launchctl kickstart -p gui/$(id -u)/com.owenmedeiros.habits`
+
+## From AGENTS.md
+
+Operational detail moved out of `AGENTS.md` when it was slimmed (2026-11-01). The
+one-time setup list now lives in `docs/habits-setup.md`; the architectural review is
+`docs/habits-pipeline.md`.
+
+`/habits` renders five heatmaps from one JSON file per habit in `src/data/habits/`,
+all sharing the same shape (`days: {"YYYY-MM-DD": {value, extra?}}`). The page buckets
+each habit against **its own** quartiles, so unlike metrics share one five-step ramp.
+
+The summary table scores each habit in the direction it is meant to move. Four of them
+count a day as good the moment the thing happened; **screen time is the one to be cut
+back**, so a day counts only when the Mac and the phone together stay at or under
+`SCREEN_TIME_TARGET_H` (2h) — a habit entry supplies that rule as `counts`, and everything
+else falls back to "recorded anything". Streaking a habit on "did it at all" when the goal
+is less of it measures the sync, not the habit: before this, screen time's best streak was
+simply the length of its history. A day with no record counts for neither direction.
+
+Only two sources have web APIs. Apple has none for either Screen Time or Health —
+`DeviceActivity` is sandboxed so usage data never leaves the device, and HealthKit is
+on-device only — and neither does the Bend app, which syncs into Apple Health. Those
+habits only move if the phone or the Mac pushes them.
+
+Stretching is matched on the workout's **source name** (`Bend`), not its activity type,
+because Bend has filed sessions as Flexibility, Yoga, and Mind & Body across versions.
+`import_health.py --list-sources` prints what an export actually contains. The Shortcut
+that pushes sessions off the phone should filter the same way, for the same reason —
+`docs/bend-stretching-shortcut.md` builds it step by step.
+
+Do not source stretching from Strava: its other "Workout" activities are strength
+sessions. Push-ups now claim that same `sport_type`, which is why `fetch_strava.py`
+picks them out by activity **name** rather than by type alone — an Apple Watch strength
+circuit is otherwise indistinguishable from a push-up set.
+
+Push-up reps are prose in the activity description (`Total Reps: 15`), written there by
+the Puuush app. Strava has no structured field for them — its strength-workout breakdown
+comes back empty for these — and `/athlete/activities` returns no `description` key at
+all, so each session costs a second, per-activity call. `build_pushup_days` spends one
+only on a day that is new or whose session count changed, reusing every other day
+straight out of `pushups.json`; that is what keeps the 730-day default window well inside
+Strava's 200-requests-per-15-minutes limit, and it is why the merge in `write_habit`
+is depended on here rather than worked around. Re-reading a day whose count moved is what
+lets a session edited or deleted after the fact still correct itself.
+
+Bend has **no public API** — no developer access, no export endpoint, nothing about
+HealthKit on bend.com — so Apple Health is the only way a session leaves the phone. The
+2026-08-23 export contained no Bend records at all; it does now, so the census in that
+commit message is stale. `import_health.py --list-sources` prints what any given export
+actually holds, and is the thing to run before believing either claim.
+
+The stretching shortcut may need to read either workouts or mindful sessions, depending on
+what Bend writes — it normalises to text lines on the phone, so neither the Mac nor the
+runner cares which. Overlapping windows are safe: identical spans are deduped by exact
+`(start, end)` and every affected day is recounted, so a 7-day window sent daily cannot
+count a session twice — and a day the phone misses is repaired by the next run rather than
+lost.
+
+`scripts/backfill_stretching.py` merges `scripts/bend-history.csv` — sessions transcribed
+by hand from Bend's Recent History — into the same habit file. Bend's Health connection
+only writes sessions from the day it was enabled onward and never backfills, so that CSV
+is the only record of anything earlier. Backfilled days are tagged `"backfilled": true`.
+
+The page maps a habit onto its five-step ramp by quartile, but switches to a direct
+mapping when there are four or fewer distinct values. Stretching is almost always exactly
+one session a day, and quartiles over a constant would paint every active day the palest
+step — a column that looks empty when the habit is perfect.
+
+`.github/workflows/habits.yml` runs the two API scripts nightly and commits
+`src/data/habits/` straight to `main`, which triggers the usual Cloudflare deploy.
+`.github/workflows/stretching.yml` does the same on a `repository_dispatch` from the
+phone, whenever that arrives. Both are a deliberate, path-scoped exception to the
+never-commit-to-`main` rule in `AGENTS.md` — they apply to automated data commits only,
+never to code. Both skip the commit when only `updated_at` changed, so a quiet day does
+not trigger a pointless redeploy, and they share a `habits-refresh` concurrency group so
+the two cannot race to push. Since 2.18.0 the nightly job also runs
+`python3 -m unittest discover -s tests` before its commit step, so a file that breaks
+the JSON contract never lands on `main`.
+
+The nightly job also **fails** when `stretching.json` or `screentime.json` stops
+arriving. Neither has a schedule CI can check up on, so without it a deleted Shortcut or
+a stopped LaunchAgent shows up only as a column that quietly stops growing — which is
+exactly how stretching stalled for a week in August 2026. It annotated rather than failed
+until 2.6.3, which was no better: screen time then sat two days stale and a human noticed
+before the run did.
+
+The windows are per habit, and deliberately different. Screen time is stale after **2
+days**: a day is written whenever either device was used at all, so a healthy file is
+never more than a day behind, and 2 catches a single missed LaunchAgent run while there
+is still time to fix it — `knowledgeC.db` and Biome hold roughly four weeks, so the loss
+is not permanent until then. Stretching is stale after **4 days**, because it only has
+days on which a session happened; rest days are real (three 2-day gaps in August 2026)
+and a 2-day window there would cry wolf every weekend.
