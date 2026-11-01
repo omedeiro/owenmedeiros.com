@@ -117,7 +117,8 @@ backup to exist first (`~/Library/Application Support/MobileSync/Backup/`).
    segment ids and `biomesyncd`, no bundle ids. Reading them pairs deletion
    timestamps into fake sessions — the source of the "2033 dates and 26-hour
    days" failure. Filter on the path component, not on the filename.
-2. **StandBy is not screen time.** `com.apple.springboard.stand-by` — the
+2. **StandBy is not screen time.** (It single-handedly turned ordinary days into
+   10-hour ones before it was excluded.) `com.apple.springboard.stand-by` — the
    charging clock face — is logged like an app and is roughly a third of the
    raw total. See `AMBIENT`. Apple excludes it.
 3. **A synced Apple Watch looks exactly like a synced iPhone.** Both are
@@ -228,7 +229,8 @@ imported from a drop file and the same night from a Health export must produce t
 number, not two subtly different ones. Both file a night under the **wake** date. The drop
 folder is re-read in full each run and recomputed, so it is idempotent — and `README*` is
 excluded from the scan, because worked examples in prose are one edit away from being
-imported as real data.
+imported as real data. Each drop folder's `README.txt` documents its own accepted line
+formats, so the formats are specified next to the data rather than only in the scripts.
 
 ## Full Disk Access
 

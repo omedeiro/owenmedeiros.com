@@ -56,7 +56,14 @@ entries' tone; no trailing full stop on a one-sentence bullet is the house style
 npm run build                      # must exit 0 and write dist/
 grep -rl katex-error dist/         # must print NOTHING
 python3 -m unittest discover -s tests -v
-python3 scripts/check_agent_env.py --require-deny 'Bash(git push origin main:*)' \
+python3 scripts/check_agent_env.py \
+  --require-deny 'Bash(git push origin main:*)' \
+  --require-deny 'Bash(git push -f:*)' \
+  --require-deny 'Bash(git push --force:*)' \
+  --require-deny 'Bash(gh pr merge --squash:*)' \
+  --require-deny 'Bash(gh pr merge --rebase:*)' \
+  --require-deny 'Bash(launchctl:*)' \
+  --require-deny 'Bash(sqlite3 /Library/Application Support/com.apple.TCC:*)' \
   --ignore-path src/pages/section/page-name.md --ignore-path docs/figures/gallery_3d/render.py
 ```
 

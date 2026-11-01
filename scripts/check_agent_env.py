@@ -100,12 +100,22 @@ def check_settings(require_deny: list[str], require_allow: list[str]) -> set[str
                 if p.exists():
                     registered.add(str(p.resolve()))
                     ok = os.access(p, os.X_OK)
-                    record("settings", ok, f"{event} hook {p.relative_to(ROOT)} "
-                           + ("is executable" if ok else "is NOT executable"))
+                    record(
+                        "settings",
+                        ok,
+                        f"{event} hook {p.relative_to(ROOT)} "
+                        + ("is executable" if ok else "is NOT executable"),
+                    )
                 elif "/" in first:
-                    record("settings", False, f"{event} hook command not found: {first}")
+                    record(
+                        "settings", False, f"{event} hook command not found: {first}"
+                    )
                 else:
-                    record("settings", True, f"{event} hook runs '{first}' (not a repo file; not checked)")
+                    record(
+                        "settings",
+                        True,
+                        f"{event} hook runs '{first}' (not a repo file; not checked)",
+                    )
 
     perms = data.get("permissions", {})
     deny = set(perms.get("deny", []))
@@ -125,8 +135,11 @@ def check_hooks(registered: set[str]) -> None:
         if not f.is_file():
             continue
         record("hooks", os.access(f, os.X_OK), f"{f.relative_to(ROOT)} executable")
-        record("hooks", str(f.resolve()) in registered,
-               f"{f.relative_to(ROOT)} registered in settings.json")
+        record(
+            "hooks",
+            str(f.resolve()) in registered,
+            f"{f.relative_to(ROOT)} registered in settings.json",
+        )
 
 
 def skill_dirs() -> list[Path]:
@@ -146,14 +159,20 @@ def check_skills() -> list[str]:
         fm = frontmatter(md)
         name_ok = fm.get("name") == d.name
         desc_ok = len(fm.get("description", "")) >= 20
-        record("skills", name_ok, f"{md.relative_to(ROOT)} frontmatter name == '{d.name}'")
+        record(
+            "skills", name_ok, f"{md.relative_to(ROOT)} frontmatter name == '{d.name}'"
+        )
         record("skills", desc_ok, f"{md.relative_to(ROOT)} has a description")
         names.append(d.name)
     cmds = ROOT / ".claude" / "commands"
     if cmds.exists():
         for md in sorted(cmds.glob("*.md")):
             fm = frontmatter(md)
-            record("skills", bool(fm.get("description")), f"{md.relative_to(ROOT)} has a description")
+            record(
+                "skills",
+                bool(fm.get("description")),
+                f"{md.relative_to(ROOT)} has a description",
+            )
             names.append(md.stem)
     return names
 
@@ -167,51 +186,93 @@ def check_symlinks() -> None:
     for p in sorted(oc.iterdir()):
         oc_names.add(p.name)
         if p.is_symlink():
-            record("symlinks", p.exists(), f"{p.relative_to(ROOT)} -> {os.readlink(p)} resolves")
+            record(
+                "symlinks",
+                p.exists(),
+                f"{p.relative_to(ROOT)} -> {os.readlink(p)} resolves",
+            )
         else:
-            record("symlinks", (p / "SKILL.md").exists(), f"{p.relative_to(ROOT)}/SKILL.md exists")
+            record(
+                "symlinks",
+                (p / "SKILL.md").exists(),
+                f"{p.relative_to(ROOT)}/SKILL.md exists",
+            )
     if cl.exists():
         cl_names = {p.name for p in cl.iterdir() if p.is_dir()}
         missing = sorted(cl_names - oc_names)
         extra = sorted(oc_names - cl_names)
-        record("symlinks", not missing, f".opencode/skills has every .claude skill"
-               + (f" (missing: {', '.join(missing)})" if missing else ""))
-        record("symlinks", not extra, f".claude/skills has every .opencode skill"
-               + (f" (missing: {', '.join(extra)})" if extra else ""))
+        record(
+            "symlinks",
+            not missing,
+            ".opencode/skills has every .claude skill"
+            + (f" (missing: {', '.join(missing)})" if missing else ""),
+        )
+        record(
+            "symlinks",
+            not extra,
+            ".claude/skills has every .opencode skill"
+            + (f" (missing: {', '.join(extra)})" if extra else ""),
+        )
 
 
-PATH_RE = re.compile(r"`([A-Za-z0-9_./-]+/[A-Za-z0-9_.-]+\.[A-Za-z0-9]{1,5})`")
+PATH_RE = re.compile(
+    r"`([A-Za-z0-9_./-]+/[A-Za-z0-9_.-]+\.[A-Za-z0-9]{1,5})(?::\d+(?:-\d+)?)?`"
+)
 
 
-def check_agents_md(max_kb: float, skill_names: list[str], ignore_paths: list[str]) -> None:
+def check_agents_md(
+    max_kb: float, skill_names: list[str], ignore_paths: list[str]
+) -> None:
     md = ROOT / "AGENTS.md"
     if not md.exists():
         record("agents-md", False, "AGENTS.md missing")
         return
     size_kb = md.stat().st_size / 1024
-    record("agents-md", size_kb <= max_kb, f"AGENTS.md is {size_kb:.1f} KB (limit {max_kb} KB)")
+    record(
+        "agents-md",
+        size_kb <= max_kb,
+        f"AGENTS.md is {size_kb:.1f} KB (limit {max_kb} KB)",
+    )
     text = md.read_text(encoding="utf-8", errors="replace")
     for name in skill_names:
         record("agents-md", name in text, f"AGENTS.md mentions skill '{name}'")
     claude_md = ROOT / "CLAUDE.md"
     if claude_md.exists():
-        record("agents-md", "@AGENTS.md" in claude_md.read_text(), "CLAUDE.md imports @AGENTS.md")
+        record(
+            "agents-md",
+            "@AGENTS.md" in claude_md.read_text(),
+            "CLAUDE.md imports @AGENTS.md",
+        )
     # Paths mentioned in AGENTS.md must exist (generated/ignored paths are skipped).
     seen = set()
     for m in PATH_RE.finditer(text):
         tok = m.group(1)
-        if tok in seen or "*" in tok or "<" in tok or tok.startswith(("http", "~", "/")):
+        if (
+            tok in seen
+            or "*" in tok
+            or "<" in tok
+            or tok.startswith(("http", "~", "/"))
+        ):
             continue
         seen.add(tok)
         if tok in ignore_paths:
             continue
         top = tok.split("/")[0]
         if top in GENERATED_TREES and not (ROOT / tok).exists():
-            continue  # generated or git-ignored: existence depends on having run something
+            continue  # generated or git-ignored tree
         record("paths", (ROOT / tok).exists(), f"AGENTS.md path exists: {tok}")
 
 
-GENERATED_TREES = {"exports", "data", "output", "logs", "dist", ".tdgl3d-run", "node_modules", "release"}
+GENERATED_TREES = {
+    "exports",
+    "data",
+    "output",
+    "logs",
+    "dist",
+    ".tdgl3d-run",
+    "node_modules",
+    "release",
+}
 
 
 def check_stale() -> None:
@@ -221,25 +282,41 @@ def check_stale() -> None:
         return
     text = p.read_text().strip()
     ok = len(text) < 300 and "AGENTS.md" in text
-    record("stale", ok, ".github/copilot-instructions.md is a short pointer to AGENTS.md"
-           if ok else ".github/copilot-instructions.md is a stale standalone file")
+    record(
+        "stale",
+        ok,
+        (
+            ".github/copilot-instructions.md is a short pointer to AGENTS.md"
+            if ok
+            else ".github/copilot-instructions.md is a stale standalone file"
+        ),
+    )
 
 
 def check_commands(cmds: list[str]) -> None:
     for c in cmds:
         r = subprocess.run(c, shell=True, cwd=ROOT, capture_output=True, text=True)
         tail = (r.stdout + r.stderr).strip().splitlines()[-1:] if r.returncode else []
-        record("commands", r.returncode == 0, f"`{c}` exit {r.returncode}" + (f" — {tail[0][:120]}" if tail else ""))
+        detail = f" — {tail[0][:120]}" if tail else ""
+        record("commands", r.returncode == 0, f"`{c}` exit {r.returncode}{detail}")
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("--max-agents-kb", type=float, default=12.0)
     ap.add_argument("--require-deny", action="append", default=[])
     ap.add_argument("--require-allow", action="append", default=[])
-    ap.add_argument("--run", action="append", default=[], help="command that must exit 0")
-    ap.add_argument("--ignore-path", action="append", default=[],
-                    help="path token in AGENTS.md that is a placeholder, gitignored or in another repo")
+    ap.add_argument(
+        "--run", action="append", default=[], help="command that must exit 0"
+    )
+    ap.add_argument(
+        "--ignore-path",
+        action="append",
+        default=[],
+        help="AGENTS.md path token that is a placeholder, gitignored or elsewhere",
+    )
     args = ap.parse_args()
 
     registered = check_settings(args.require_deny, args.require_allow)
