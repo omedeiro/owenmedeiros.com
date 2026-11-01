@@ -4,8 +4,10 @@ A review of how `/habits` gets its data, written 2026-08-23 after rebuilding the
 screen-time half. Covers what each pipeline does, which parts are trustworthy,
 which are fragile, and what is worth doing next.
 
-`AGENTS.md` is the operational runbook — how to run things, and the on-disk
-details of the Apple data sources. This is the architectural view.
+`AGENTS.md` holds the short contract and the script table; the `habits-data` skill
+(`.claude/skills/habits-data/SKILL.md`) is the operational runbook with the on-disk
+details of the Apple data sources, and `docs/habits-setup.md` is the one-time setup.
+This is the architectural view.
 
 ## What feeds the page
 
@@ -93,7 +95,7 @@ Two sources, unioned per day:
   A documented schema.
 - **iPhone** — `SEGB` segments under
   `~/Library/Biome/streams/restricted/App.InFocus/remote/<uuid>/`, parsed as
-  protobuf records. Reverse-engineered; see `AGENTS.md` for the layout.
+  protobuf records. Reverse-engineered; see the `habits-data` skill for the layout.
 
 This is the fragile one, and it is worth being explicit about why it is
 nonetheless trustworthy today:

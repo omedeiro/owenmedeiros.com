@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.18.0 — 2026-11-01
+
+### Added
+
+- `tests/test_habits.py`, standard-library `unittest`, pinning the one-JSON-per-habit contract (every day is a `YYYY-MM-DD` with a numeric `value`, every file has `updated_at`), that `write_habit` merges rather than overwrites, and that `implausible()` refuses a 26-hour day and a 2033 date while `implausible_sleep()` refuses a 1.5 h median. `habits.yml` runs them before its commit step so bad data never lands on `main`
+- `.github/workflows/ci.yml`: on every PR and push to `main`, the tests, `npm ci && npm run build`, a `katex-error` grep over `dist/`, and `scripts/check_agent_env.py`, which checks that `.claude/settings.json`, the skills and `AGENTS.md` agree with each other
+- `.claude/settings.json` with the allow and deny rules for agent sessions — pushes to `main`, force pushes, squash and rebase merges, `launchctl` and the TCC database are denied
+- A `release` skill (`.claude/skills/release/SKILL.md`) with the seven-step release ritual
+- `docs/habits-setup.md`, the one-time setup list for every habit source, moved verbatim out of `AGENTS.md`
+
+### Changed
+
+- `AGENTS.md` slimmed from 26 KB to under 12 KB: the long Habits and Apple Health sections are now a short contract plus the script table, and every paragraph dropped from it lives in the `habits-data` skill (under *From AGENTS.md*), `docs/habits-pipeline.md` or `docs/habits-setup.md`. A new *Skills* section names `habits-data` and `release`
+
+### Removed
+
+- `.github/copilot-instructions.md`, which described the MyST site this repo stopped being
+
 ## 2.17.1 — 2026-10-29
 
 ### Changed

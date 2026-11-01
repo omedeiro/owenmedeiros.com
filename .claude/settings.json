@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(python3 -m unittest:*)",
+      "Bash(python3 scripts/check_agent_env.py:*)"
+    ],
+    "deny": [
+      "Bash(git push origin main:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force:*)",
+      "Bash(gh pr merge --squash:*)",
+      "Bash(gh pr merge --rebase:*)",
+      "Bash(launchctl:*)",
+      "Bash(sqlite3 /Library/Application Support/com.apple.TCC:*)"
+    ]
+  }
+}
