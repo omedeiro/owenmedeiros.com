@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.18.0 — 2026-10-30
+
+### Added
+
+- Two fast I–V presets on the live simulator's 5 nm SNSPD wire (thin-film limit), each a fixed schedule of held currents whose length is known before it starts (about 1,100 ps of simulated time for the wire and 1,300 ps for the diode, at most 1,400 and 2,100), with a progress bar and a Stop button. *Wire I–V* sweeps ±1.2 I<sub>dep</sub>; on the CPU reference both signs switch at 0.97 I<sub>dep</sub> (GL 1.00) and retrap at 0.29 (SBT hotspot current 0.32), I<sub>r</sub>/I<sub>sw</sub> = 0.30. *Diode η(B)* finds the switching current both ways at 15 fields up to ±410 mT on the notched wire and plots I<sub>c±</sub> and η against field: I<sub>c+</sub>(B) = |I<sub>c−</sub>(−B)| exactly, η linear from zero, 13 % at most near 255 mT
+- After each preset the page grades the curve against what measured SNSPD and diode I–V curves show (Charaev 2017, Frasca 2019, Li 2011, Hortensius 2012, Hou 2023, Castellani 2024): zero voltage below switching, a step-like switch, hysteresis with I<sub>r</sub>/I<sub>sw</sub> in the measured range, I<sub>sw</sub> and I<sub>r</sub> against the GL and SBT closed forms, ± symmetry, the resistive branch under the normal line; for the diode, η(0) = 0, the (I, B) → (−I, −B) symmetry, η odd and linear in B, the favoured direction rising then falling, η peaking at a finite field
+- The thin wire now takes a perpendicular field, entering as the frozen applied vector potential (A = −B(y − y<sub>c</sub>) x̂); the GPU check runs the thin mode in a field with a notch
+
+### Changed
+
+- While a sweep or preset runs on the thin wire, the heat runs 12× faster instead of 3× (the oxide takes four substeps per step to stay stable). Steady states are unchanged; at 3× the presets' 60 τ holds left the retrapping current about 40 % under the hotspot current
+- *Reference I–V* is now *Block I–V*
+
 ## 2.17.1 — 2026-10-29
 
 ### Changed
