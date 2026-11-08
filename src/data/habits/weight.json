@@ -3,7 +3,7 @@
   "label": "Weight",
   "source": "Withings",
   "unit": "lb",
-  "updated_at": "2026-11-06T02:37:26Z",
+  "updated_at": "2026-11-08T02:58:24Z",
   "days": {
     "2026-10-28": {
       "value": 184.5,
@@ -54,6 +54,13 @@
       "value": 188.4,
       "extra": {
         "time": "07:23",
+        "readings": 2
+      }
+    },
+    "2026-11-06": {
+      "value": 183.1,
+      "extra": {
+        "time": "06:44",
         "readings": 2
       }
     }
