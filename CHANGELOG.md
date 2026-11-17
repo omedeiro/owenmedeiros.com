@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.18.1 — 2026-11-17
+
+### Changed
+
+- Home and About pages now list the current position as Founding Research Engineer at Adiabatic Machines (2026–present); MIT Lincoln Laboratory (2025–2026) moves to Background
+
 ## 2.18.0 — 2026-10-30
 
 ### Added

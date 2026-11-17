@@ -3,14 +3,16 @@ layout: ../layouts/Md.astro
 title: About
 ---
 
-Technical Staff Scientist at MIT Lincoln Laboratory working on superconducting electronics and quantum devices.
+Founding Research Engineer at Adiabatic Machines working on superconducting electronics and quantum devices.
 
 ## Current position
 
-**Technical Staff Scientist** — MIT Lincoln Laboratory (2025–present)
-Developing superconducting electronics for quantum computing and advanced sensing applications.
+**Founding Research Engineer** — Adiabatic Machines (2026–present)
 
 ## Background
+
+**Technical Staff Scientist** — MIT Lincoln Laboratory (2025–2026)
+Developed superconducting electronics for quantum computing and advanced sensing applications.
 
 **Research Associate** — MIT Quantum Nanostructures and Nanofabrication Group (2019–2025)
 Advisor: Professor Karl Berggren
