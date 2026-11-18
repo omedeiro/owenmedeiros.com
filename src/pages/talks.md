@@ -21,7 +21,7 @@ Recorded talks on superconducting nanowire electronics. Each thumbnail opens the
       <span class="talk-play">▶ Watch at IEEE CSC · 16 min</span>
     </a>
     <p class="talk-title"><a href="https://ieeecsc.org/presentation/special/nanowire-memory-array">A 16-bit Superconducting Nanowire Memory Array</a></p>
-    <p class="talk-meta">Applied Superconductivity Conference (ASC 2024) · Memorial Session for Ted Van Duzer · 3 September 2024</p>
+    <p class="talk-meta">Applied Superconductivity Conference (ASC 2024) · Salt Lake City UT · Memorial Session for Ted Van Duzer · 3 September 2024</p>
     <p>Operation of a 16-bit superconducting nanowire memory array, with conclusions and future work.</p>
   </li>
 </ul>
