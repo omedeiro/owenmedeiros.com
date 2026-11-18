@@ -10,6 +10,7 @@ const nav = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
   { href: "/research", label: "Research" },
+  { href: "/talks", label: "Talks" },
   { href: "/projects", label: "Projects" },
   { href: "/maths", label: "Maths" },
   { href: "/habits", label: "Habits" },
@@ -156,6 +157,14 @@ const year = new Date().getFullYear();
       li { margin: 0.25rem 0; }
       .pub-list li { margin: 0.8rem 0; }
       .pub-venue { color: var(--muted); font-style: italic; }
+      .talk-list { list-style: none; padding: 0; margin: 1.5rem 0; }
+      .talk-list .talk { margin: 0 0 2.5rem; }
+      .talk-thumb { display: block; position: relative; text-decoration: none; }
+      .talk-thumb img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid var(--border); }
+      .talk-play { position: absolute; left: 0.6rem; bottom: 0.6rem; padding: 0.2rem 0.55rem; background: rgba(0,0,0,0.72); color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 0.8rem; }
+      .talk-thumb:hover img { opacity: 0.9; }
+      .talk-title { margin: 0.7rem 0 0.15rem; font-weight: 600; }
+      .talk-meta { margin: 0 0 0.4rem; color: var(--muted); font-style: italic; }
       /* Habits heatmap. Scoped to /habits, the first of the five pages that
          carry client-side JS — here only for the tooltip. */
       .habits-chart { position: relative; margin: 2rem 0 1rem; }
