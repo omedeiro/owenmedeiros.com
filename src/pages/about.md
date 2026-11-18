@@ -8,6 +8,7 @@ Founding Research Engineer at Adiabatic Machines working on superconducting elec
 ## Current position
 
 **Founding Research Engineer** — Adiabatic Machines (2026–present)
+Leading chip design and cryogenic measurement.
 
 ## Background
 
