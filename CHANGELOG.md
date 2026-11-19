@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.19.1 — 2026-11-19
+
+### Changed
+
+- Recorded talks (thesis defense and ASC 2024) now sit on the Research page under the doctoral thesis; `/talks` redirects to `/research`
+
+### Removed
+
+- Talks page and its nav tab
+
 ## 2.19.0 — 2026-11-18
 
 ### Added
