@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.19.0 — 2026-11-18
+
+### Added
+
+- Talks page (`/talks`, linked in the nav) listing recorded talks as linked thumbnails, no embeds: the PhD thesis defense (MIT, 13 May 2025, YouTube) and *A 16-bit Superconducting Nanowire Memory Array* (ASC 2024, 3 September 2024, IEEE CSC)
+
 ## 2.18.1 — 2026-11-17
 
 ### Changed
