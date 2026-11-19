@@ -15,6 +15,7 @@ export default defineConfig({
     "/contact": "/about",
     "/publications": "/research",
     "/thesis": "/research",
+    "/talks": "/research",
   },
   markdown: {
     processor: unified({
