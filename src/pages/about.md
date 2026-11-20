@@ -3,16 +3,16 @@ layout: ../layouts/Md.astro
 title: About
 ---
 
-Founding Research Engineer at Adiabatic Machines working on superconducting electronics and quantum devices.
+Founding Research Engineer at [Adiabatic Machines](https://adiabaticmachines.com) working on superconducting electronics and quantum devices.
 
 ## Current position
 
-**Founding Research Engineer** — Adiabatic Machines (2026–present)
+**Founding Research Engineer** — [Adiabatic Machines](https://adiabaticmachines.com) (2026–present)
 Leading chip design and cryogenic measurement.
 
 ## Background
 
-**Technical Staff Scientist** — MIT Lincoln Laboratory (2025–2026)
+**Technical Staff Scientist** — [MIT Lincoln Laboratory](https://www.ll.mit.edu) (2025–2026)
 Developed superconducting electronics for quantum computing and advanced sensing applications.
 
 **Research Associate** — MIT Quantum Nanostructures and Nanofabrication Group (2019–2025)
