@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.19.2 — 2026-11-20
+
+### Changed
+
+- About page links Adiabatic Machines (adiabaticmachines.com) and MIT Lincoln Laboratory (ll.mit.edu) where each is named
+
 ## 2.19.1 — 2026-11-19
 
 ### Changed
