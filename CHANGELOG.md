@@ -4,7 +4,7 @@
 
 ### Changed
 
-- About page links Adiabatic Machines (adiabaticmachines.com) and MIT Lincoln Laboratory (ll.mit.edu) where each is named
+- Home and About pages link Adiabatic Machines (adiabaticmachines.com) and MIT Lincoln Laboratory (ll.mit.edu) where each is named
 
 ## 2.19.1 — 2026-11-19
 
