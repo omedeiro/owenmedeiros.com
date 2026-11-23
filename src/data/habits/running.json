@@ -3,7 +3,7 @@
   "label": "Running",
   "source": "Strava",
   "unit": "mi",
-  "updated_at": "2026-11-22T06:01:45Z",
+  "updated_at": "2026-11-23T06:02:04Z",
   "days": {
     "2019-01-01": {
       "value": 1.6046,
@@ -7041,6 +7041,14 @@
       "extra": {
         "moving_time_s": 1769,
         "distance_m": 5467,
+        "count": 1
+      }
+    },
+    "2026-11-22": {
+      "value": 3.0352,
+      "extra": {
+        "moving_time_s": 1500,
+        "distance_m": 4884,
         "count": 1
       }
     }
