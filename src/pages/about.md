@@ -13,7 +13,7 @@ Leading chip design and cryogenic measurement.
 ## Background
 
 **Technical Staff Scientist** — [MIT Lincoln Laboratory](https://www.ll.mit.edu) (2025–2026)
-Developed superconducting electronics for quantum computing and advanced sensing applications.
+Developed superconducting electronics for quantum and classical computing.
 
 **Research Associate** — MIT Quantum Nanostructures and Nanofabrication Group (2019–2025)
 Advisor: Professor Karl Berggren
