@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.19.2 — 2026-11-20
+
+### Changed
+
+- Home and About pages link Adiabatic Machines (adiabaticmachines.com) and MIT Lincoln Laboratory (ll.mit.edu) where each is named
+- Lincoln Laboratory role now reads "superconducting electronics for quantum and classical computing" instead of "quantum computing and advanced sensing applications"
+
 ## 2.19.1 — 2026-11-19
 
 ### Changed
